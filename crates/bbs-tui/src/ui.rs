@@ -5,4 +5,3 @@ pub async fn run_placeholder() -> Result<()> {
     println!("bbs-tui starting... (TUI coming soon)");
     Ok(())
 }
-

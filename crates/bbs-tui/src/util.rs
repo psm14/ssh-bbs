@@ -5,4 +5,3 @@ pub fn fp_short(fp_b64: &str) -> String {
     let s = fp_b64.trim();
     s.chars().take(8).collect()
 }
-

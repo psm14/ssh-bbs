@@ -1,13 +1,13 @@
-mod ui;
-mod input;
 mod data;
-mod realtime;
-mod rate;
-mod rooms;
+mod input;
 mod nick;
+mod rate;
+mod realtime;
+mod rooms;
+mod ui;
 mod util;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use sqlx::postgres::PgPoolOptions;
 use tracing::{error, info};
 
@@ -24,11 +24,28 @@ async fn main() -> Result<()> {
         .connect(&cfg.database_url)
         .await
         .context("connect postgres")?;
-    sqlx::migrate!().run(&pool).await.context("run migrations")?;
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .context("run migrations")?;
 
-    // TODO: upsert user by fingerprint and seed default room
+    // Upsert user by fingerprint and seed default room
+    let fp = cfg
+        .pubkey_sha256
+        .clone()
+        .unwrap_or_else(|| "dev-local".into());
+    let key_type = cfg.pubkey_type.clone().unwrap_or_else(|| "dev".into());
+    let user = match data::upsert_user_by_fp(&pool, &fp, &key_type).await {
+        Ok(u) => u,
+        Err(e) => {
+            error!(error=%e, "failed upsert user");
+            return Err(e);
+        }
+    };
+    let room = data::ensure_room_exists(&pool, &cfg.default_room, user.id).await?;
+    data::join_room(&pool, room.id, user.id).await?;
 
-    // TODO: start UI runtime
+    // start UI runtime (placeholder)
     ui::run_placeholder().await?;
 
     Ok(())
@@ -60,17 +77,38 @@ struct Config {
 
 impl Config {
     fn from_env() -> Result<Self> {
-        let database_url = std::env::var("DATABASE_URL")
-            .context("DATABASE_URL is required")?;
-        let default_room = std::env::var("BBS_DEFAULT_ROOM").unwrap_or_else(|_| "lobby".to_string());
+        let database_url = std::env::var("DATABASE_URL").context("DATABASE_URL is required")?;
+        let default_room =
+            std::env::var("BBS_DEFAULT_ROOM").unwrap_or_else(|_| "lobby".to_string());
         let pubkey_sha256 = std::env::var("BBS_PUBKEY_SHA256").ok();
         let pubkey_type = std::env::var("BBS_PUBKEY_TYPE").ok();
         let remote_addr = std::env::var("REMOTE_ADDR").ok();
-        let msg_max_len = std::env::var("BBS_MSG_MAX_LEN").ok().and_then(|v| v.parse().ok()).unwrap_or(1000);
-        let rate_per_min = std::env::var("BBS_RATE_PER_MIN").ok().and_then(|v| v.parse().ok()).unwrap_or(10);
-        let retention_days = std::env::var("BBS_RETENTION_DAYS").ok().and_then(|v| v.parse().ok()).unwrap_or(30);
-        let history_load = std::env::var("BBS_HISTORY_LOAD").ok().and_then(|v| v.parse().ok()).unwrap_or(200);
-        Ok(Self { database_url, default_room, pubkey_sha256, pubkey_type, remote_addr, msg_max_len, rate_per_min, retention_days, history_load })
+        let msg_max_len = std::env::var("BBS_MSG_MAX_LEN")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(1000);
+        let rate_per_min = std::env::var("BBS_RATE_PER_MIN")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10);
+        let retention_days = std::env::var("BBS_RETENTION_DAYS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(30);
+        let history_load = std::env::var("BBS_HISTORY_LOAD")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(200);
+        Ok(Self {
+            database_url,
+            default_room,
+            pubkey_sha256,
+            pubkey_type,
+            remote_addr,
+            msg_max_len,
+            rate_per_min,
+            retention_days,
+            history_load,
+        })
     }
 }
-

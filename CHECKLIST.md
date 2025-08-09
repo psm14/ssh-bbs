@@ -40,16 +40,16 @@
 * [x] migration runner
 
   * [x] on startup, `sqlx::migrate!().run(&pool).await?`
-* [ ] seed default room `lobby` if missing
+* [x] seed default room `lobby` if missing
 
 ## m2 — tui foundation (non-network)
 
 * [ ] add crates: `ratatui`, `crossterm`, `tui-textarea` (or diy), `anyhow` (for ergonomics)
-* [ ] boot skeleton
+* [x] boot skeleton
 
-  * [ ] read env: `BBS_PUBKEY_SHA256`, `BBS_PUBKEY_TYPE`, `REMOTE_ADDR`, `DATABASE_URL`, `BBS_DEFAULT_ROOM`
-  * [ ] establish db pool
-  * [ ] upsert user by fingerprint; create random ascii handle if new
+  * [x] read env: `BBS_PUBKEY_SHA256`, `BBS_PUBKEY_TYPE`, `REMOTE_ADDR`, `DATABASE_URL`, `BBS_DEFAULT_ROOM`
+  * [x] establish db pool
+  * [x] upsert user by fingerprint; create random ascii handle if new
 * [ ] layout
 
   * [ ] main messages pane
