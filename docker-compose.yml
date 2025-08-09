@@ -1,0 +1,38 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: bbs
+      POSTGRES_PASSWORD: bbs
+      POSTGRES_DB: bbs
+    volumes: [ "pg:/var/lib/postgresql/data" ]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U bbs"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ssh-gateway:
+    build: ./crates/bbs-ssh-gateway
+    environment:
+      DATABASE_URL: postgres://bbs:bbs@postgres:5432/bbs
+      BBS_CLIENT_PATH: /app/bbs-tui
+      BBS_DEFAULT_ROOM: lobby
+    depends_on:
+      - postgres
+    ports:
+      - "0.0.0.0:2222:2222"
+
+  # Optional Cloudflare tunnel
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+  #   depends_on:
+  #     - ssh-gateway
+
+volumes:
+  pg: {}
+

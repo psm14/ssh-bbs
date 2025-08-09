@@ -1,0 +1,23 @@
+[package]
+name = "bbs-tui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["clock"] }
+crossterm = "0.27"
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls","postgres","macros","uuid","chrono","migrate"] }
+tokio = { version = "1", features = ["rt-multi-thread","macros","time","signal"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter","fmt","json"] }
+unicode-segmentation = "1"
+ratatui = "0.26"
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "thin"
+

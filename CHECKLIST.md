@@ -2,44 +2,44 @@
 
 ## m0 — repo + tooling
 
-* [ ] create mono-repo
+* [x] create mono-repo
 
   * [ ] `mkdir bbs-over-ssh && cd bbs-over-ssh`
   * [ ] `git init -b main`
-* [ ] rust workspace
+* [x] rust workspace
 
-  * [ ] `cargo new --bin crates/bbs-tui`
-  * [ ] top-level `Cargo.toml` `[workspace]` with `members = ["crates/bbs-tui"]`
-* [ ] go ssh gateway
+  * [x] `cargo new --bin crates/bbs-tui`
+  * [x] top-level `Cargo.toml` `[workspace]` with `members = ["crates/bbs-tui"]`
+* [x] go ssh gateway
 
-  * [ ] `mkdir -p crates/bbs-ssh-gateway && cd crates/bbs-ssh-gateway`
-  * [ ] `go mod init github.com/you/bbs-ssh-gateway`
-* [ ] toolchain + lint
+  * [x] `mkdir -p crates/bbs-ssh-gateway && cd crates/bbs-ssh-gateway`
+  * [x] `go mod init github.com/you/bbs-ssh-gateway`
+* [x] toolchain + lint
 
-  * [ ] rust: `rustup override set stable` in repo
+  * [x] rust: `rustup override set stable` in repo
   * [ ] add rust `clippy` + `rustfmt` configs
   * [ ] go: `gofmt` + `golangci-lint` (optional)
 * [ ] license + readme
-* [ ] `.editorconfig`, `.gitignore` (target/, node\_modules/ just in case)
+* [x] `.editorconfig`, `.gitignore` (target/, node\_modules/ just in case)
 
 ## m1 — database + migrations
 
-* [ ] dockerized postgres 16
+* [x] dockerized postgres 16
 
-  * [ ] add `docker-compose.yml` with `postgres:16` and healthcheck
-* [ ] rust db deps in `bbs-tui`
+  * [x] add `docker-compose.yml` with `postgres:16` and healthcheck
+* [x] rust db deps in `bbs-tui`
 
-  * [ ] `sqlx = { version = "0.7", features = ["runtime-tokio-rustls","postgres","macros","uuid","chrono","migrate"] }`
-  * [ ] `tokio`, `tracing`, `serde`, `rand`, `unicode-segmentation`
-* [ ] create migration `crates/bbs-tui/migrations/0001_init.sql` containing:
+  * [x] `sqlx = { version = "0.7", features = ["runtime-tokio-rustls","postgres","macros","uuid","chrono","migrate"] }`
+  * [x] `tokio`, `tracing`, `serde`, `rand`, `unicode-segmentation`
+* [x] create migration `crates/bbs-tui/migrations/0001_init.sql` containing:
 
-  * [ ] `users`, `rooms`, `room_members`, `messages`, `name_changes`, `bans` tables
-  * [ ] indexes as designed
-  * [ ] `messages_notify` trigger + `notify_new_message()` function
-* [ ] `DATABASE_URL` wiring (env)
-* [ ] migration runner
+  * [x] `users`, `rooms`, `room_members`, `messages`, `name_changes`, `bans` tables
+  * [x] indexes as designed
+  * [x] `messages_notify` trigger + `notify_new_message()` function
+* [x] `DATABASE_URL` wiring (env)
+* [x] migration runner
 
-  * [ ] on startup, `sqlx::migrate!().run(&pool).await?`
+  * [x] on startup, `sqlx::migrate!().run(&pool).await?`
 * [ ] seed default room `lobby` if missing
 
 ## m2 — tui foundation (non-network)
@@ -249,4 +249,3 @@
 * [ ] pg cron for retention instead of app job
 * [ ] unicode nicknames with nfkc + width accounting
 * [ ] cf access/sso in front of ssh
-

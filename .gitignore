@@ -1,0 +1,18 @@
+# Rust
+target/
+**/target/
+
+# Go
+bin/
+
+# Editors/OS
+.DS_Store
+.idea/
+.vscode/
+
+# Node (just in case)
+node_modules/
+
+# Misc
+*.log
+
