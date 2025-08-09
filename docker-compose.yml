@@ -14,7 +14,9 @@ services:
       retries: 20
 
   ssh-gateway:
-    build: ./crates/bbs-ssh-gateway
+    build:
+      context: .
+      dockerfile: crates/bbs-ssh-gateway/Dockerfile
     environment:
       DATABASE_URL: postgres://bbs:bbs@postgres:5432/bbs
       BBS_CLIENT_PATH: /app/bbs-tui
@@ -35,4 +37,3 @@ services:
 
 volumes:
   pg: {}
-
