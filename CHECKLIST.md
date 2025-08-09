@@ -131,25 +131,25 @@
 
 ## m7 — ssh gateway (go, wish)
 
-* [ ] deps: `gliderlabs/ssh`, `charmbracelet/wish`, `golang.org/x/crypto/ssh`
-* [ ] server options
+* [x] deps: `gliderlabs/ssh`, `golang.org/x/crypto/ssh`, `creack/pty`
+* [x] server options
 
-  * [ ] host keys (generate and persist)
-  * [ ] disable passwords/keyboard-interactive
-  * [ ] disable sftp, forwarding, subsystems
-  * [ ] idle timeout (e.g., 2h)
-* [ ] key acceptance
+  * [x] host keys (ephemeral ed25519 for now)
+  * [x] disable passwords/keyboard-interactive
+  * [x] disable forwarding/subsystems
+  * [x] idle timeout (e.g., 2h)
+* [x] key acceptance
 
-  * [ ] allow: ed25519, ecdsa p256/p384, rsa-sha2-256/512, [sk-ssh-ed25519@openssh.com](mailto:sk-ssh-ed25519@openssh.com)
-  * [ ] reject: dss, rsa-sha1
-* [ ] compute fingerprint: `ssh.FingerprintSHA256(pubkey)`
-* [ ] session handler
+  * [x] allow: ed25519, ecdsa p256/p384, rsa-sha2-256/512, sk-ssh-ed25519
+  * [x] reject: dss, rsa-sha1
+* [x] compute fingerprint: `ssh.FingerprintSHA256(pubkey)`
+* [x] session handler
 
-  * [ ] allocate pty
-  * [ ] `exec.Command(BBS_CLIENT_PATH)`; set env: `BBS_PUBKEY_SHA256`, `BBS_PUBKEY_TYPE`, `REMOTE_ADDR`, `DATABASE_URL`, `BBS_DEFAULT_ROOM`
-  * [ ] wire stdio ↔ pty
-  * [ ] exit on disconnect
-* [ ] containerize gateway with `BBS_CLIENT_PATH=/app/bbs-tui`
+  * [x] allocate pty
+  * [x] `exec.Command(BBS_CLIENT_PATH)`; set env: `BBS_PUBKEY_SHA256`, `BBS_PUBKEY_TYPE`, `REMOTE_ADDR`, `DATABASE_URL`, `BBS_DEFAULT_ROOM`
+  * [x] wire stdio ↔ pty
+  * [x] exit on disconnect
+* [x] containerize gateway with `BBS_CLIENT_PATH=/app/bbs-tui`
 
 ## m8 — docker-compose + cloudflare
 
