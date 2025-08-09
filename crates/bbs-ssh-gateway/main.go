@@ -30,67 +30,77 @@ func main() {
     hostKeyPath := getenv("BBS_HOSTKEY_PATH", "/app/host-keys/hostkey.pem")
     signer := mustLoadOrCreateHostKey(hostKeyPath)
 
-	glssh.Handle(func(s glssh.Session) {
-		// Require PTY
-		ptyReq, winCh, ok := s.Pty()
-		if !ok {
-			io.WriteString(s, "A PTY is required.\n")
-			_ = s.Exit(1)
-			return
-		}
+    // Session handler
+    sessionHandler := func(s glssh.Session) {
+        // Require PTY
+        ptyReq, winCh, ok := s.Pty()
+        if !ok {
+            io.WriteString(s, "A PTY is required.\n")
+            _ = s.Exit(1)
+            return
+        }
 
-		pk := s.PublicKey()
-		fp := "unknown"
-		ktype := "unknown"
-		if pk != nil {
-			fp = gossh.FingerprintSHA256(pk)
-			ktype = mapKeyType(pk.Type())
-		}
-		log.Printf("connect remote=%s key=%s fp=%s", remoteAddr(s), ktype, shortFP(fp))
+        pk := s.PublicKey()
+        fp := "unknown"
+        ktype := "unknown"
+        if pk != nil {
+            fp = gossh.FingerprintSHA256(pk)
+            ktype = mapKeyType(pk.Type())
+        }
+        log.Printf("connect remote=%s key=%s fp=%s", remoteAddr(s), ktype, shortFP(fp))
 
-		// Prepare command
-		cmd := exec.CommandContext(s.Context(), clientPath)
-		cmd.Env = append(os.Environ(),
-			"BBS_PUBKEY_SHA256="+fp,
-			"BBS_PUBKEY_TYPE="+ktype,
-			"REMOTE_ADDR="+remoteAddr(s),
-			"DATABASE_URL="+databaseURL,
-			"BBS_DEFAULT_ROOM="+defaultRoom,
-		)
+        // Prepare command
+        cmd := exec.CommandContext(s.Context(), clientPath)
+        // include session-provided env (e.g., TERM, LANG)
+        cmd.Env = append(append([]string{}, os.Environ()...), append(s.Environ(),
+            "BBS_PUBKEY_SHA256="+fp,
+            "BBS_PUBKEY_TYPE="+ktype,
+            "REMOTE_ADDR="+remoteAddr(s),
+            "DATABASE_URL="+databaseURL,
+            "BBS_DEFAULT_ROOM="+defaultRoom,
+        )...)
 
-		// Allocate PTY for the child
-		f, err := pty.Start(cmd)
-		if err != nil {
-			fmt.Fprintf(s, "failed to start client: %v\n", err)
-			_ = s.Exit(1)
-			return
-		}
-		defer f.Close()
+        log.Printf("spawn tui cmd=%s env[DATABASE_URL]=%t term=%s", clientPath, databaseURL != "", getenvFrom(cmd.Env, "TERM"))
 
-		// Set initial window size
-		_ = pty.Setsize(f, &pty.Winsize{Cols: uint16(ptyReq.Window.Width), Rows: uint16(ptyReq.Window.Height)})
+        // Allocate PTY for the child
+        f, err := pty.Start(cmd)
+        if err != nil {
+            fmt.Fprintf(s, "failed to start client: %v\n", err)
+            _ = s.Exit(1)
+            return
+        }
+        defer f.Close()
 
-		// Propagate future window changes
-		go func() {
-			for w := range winCh {
-				_ = pty.Setsize(f, &pty.Winsize{Cols: uint16(w.Width), Rows: uint16(w.Height)})
-			}
-		}()
+        // Set initial window size
+        _ = pty.Setsize(f, &pty.Winsize{Cols: uint16(ptyReq.Window.Width), Rows: uint16(ptyReq.Window.Height)})
 
-		// Pipe data
-		go func() { _, _ = io.Copy(f, s) }()
-		_, _ = io.Copy(s, f)
+        // Propagate future window changes
+        go func() {
+            for w := range winCh {
+                _ = pty.Setsize(f, &pty.Winsize{Cols: uint16(w.Width), Rows: uint16(w.Height)})
+            }
+        }()
 
-		_ = cmd.Wait()
-		log.Printf("disconnect remote=%s", remoteAddr(s))
-	})
+        // Pipe data
+        go func() { _, _ = io.Copy(f, s) }()
+        _, _ = io.Copy(s, f)
+
+        err = cmd.Wait()
+        if err != nil {
+            log.Printf("tui exited with error: %v", err)
+        }
+        if ps := cmd.ProcessState; ps != nil {
+            log.Printf("tui exit code: %d", ps.ExitCode())
+        }
+        log.Printf("disconnect remote=%s", remoteAddr(s))
+    }
 
 	// Public key auth: allow modern algorithms only
-	server := &glssh.Server{
-		Addr:        addr,
-		Handler:     glssh.Handler(func(s glssh.Session) { /* replaced by global Handle above, keep for clarity */ }),
-		Version:     "SSH-2.0-bbs-ssh-gateway",
-		IdleTimeout: 2 * time.Hour,
+    server := &glssh.Server{
+        Addr:        addr,
+        Handler:     glssh.Handler(sessionHandler),
+        Version:     "SSH-2.0-bbs-ssh-gateway",
+        IdleTimeout: 2 * time.Hour,
 		PublicKeyHandler: func(ctx glssh.Context, key glssh.PublicKey) bool {
 			t := key.Type()
 			allowed := map[string]bool{
@@ -241,4 +251,14 @@ func dirOf(path string) string {
         return "/"
     }
     return path[:i]
+}
+
+func getenvFrom(env []string, key string) string {
+    pref := key + "="
+    for _, e := range env {
+        if strings.HasPrefix(e, pref) {
+            return strings.TrimPrefix(e, pref)
+        }
+    }
+    return ""
 }

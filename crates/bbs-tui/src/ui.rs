@@ -16,6 +16,9 @@ use sqlx::PgPool;
 use std::{io, time::Duration};
 
 use crate::data::{self, MessageView, Room, User};
+use crate::input::{parse_command, Command};
+use crate::nick::valid_nick;
+use crate::rooms::valid_room_name;
 use crate::realtime;
 use std::collections::HashSet;
 use tokio::sync::mpsc;
@@ -166,13 +169,8 @@ async fn handle_key(app: &mut App, k: KeyEvent) -> Result<()> {
                 app.input.clear();
                 return Ok(());
             }
-            if s.starts_with('/') {
-                // simple commands
-                match s {
-                    "/quit" | "/exit" => app.running = false,
-                    "/help" => app.status = "enter to send; /quit to exit".into(),
-                    _ => app.status = "unknown command".into(),
-                }
+            if let Some(cmd) = parse_command(s) {
+                handle_command(app, cmd).await?;
                 app.input.clear();
                 return Ok(());
             }
@@ -209,4 +207,58 @@ fn sanitize(s: &str) -> String {
     s.chars()
         .filter(|c| !c.is_control() || *c == '\n' || *c == '\t')
         .collect()
+}
+
+async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
+    match cmd {
+        Command::Help => {
+            app.status = "/help /quit /nick /join /rooms /who /me".into();
+        }
+        Command::Quit => { app.running = false; }
+        Command::Me(action) => {
+            if action.trim().is_empty() { app.status = "usage: /me <action>".into(); return Ok(()); }
+            let body = format!("* {} {}", app.user.handle, action.trim());
+            let msg = data::insert_message(&app.pool, app.room.id, app.user.id, &body).await?;
+            let mv = MessageView { id: msg.id, room_id: msg.room_id, user_id: msg.user_id, user_handle: app.user.handle.clone(), body: msg.body, created_at: msg.created_at };
+            app.seen_ids.insert(mv.id);
+            app.messages.push(mv);
+            app.status = "me".into();
+        }
+        Command::Nick(new) => {
+            let new = new.trim();
+            if !valid_nick(new) { app.status = "invalid nick [a-z0-9_-]{2,16}".into(); return Ok(()); }
+            match data::change_handle(&app.pool, app.user.id, new).await {
+                Ok(updated) => { app.user = updated; app.status = "nick changed".into(); }
+                Err(e) => {
+                    let is_unique = e.downcast_ref::<sqlx::Error>().and_then(|err| err.as_database_error()).and_then(|d| d.code()).map(|c| c == "23505").unwrap_or(false);
+                    if is_unique { app.status = "nick taken".into(); } else { app.status = format!("nick error: {}", e).into(); }
+                }
+            }
+        }
+        Command::Join(name) => {
+            let name = name.trim();
+            if !valid_room_name(name) { app.status = "invalid room [a-z0-9_-]{1,24}".into(); return Ok(()); }
+            let room = data::ensure_room_exists(&app.pool, name, app.user.id).await?;
+            data::join_room(&app.pool, room.id, app.user.id).await?;
+            app.room = room;
+            app.messages = data::recent_messages_view(&app.pool, app.room.id, app.opts.history_load as i64).await?;
+            app.seen_ids.clear();
+            for m in &app.messages { app.seen_ids.insert(m.id); }
+            app.status = "joined".into();
+        }
+        Command::Leave(_name) => {
+            app.status = "left (ui only)".into();
+        }
+        Command::Rooms => {
+            let rooms = data::list_rooms(&app.pool).await?;
+            let names: Vec<String> = rooms.into_iter().map(|r| r.name).collect();
+            app.status = format!("rooms: {}", names.join(", "));
+        }
+        Command::Who(_room) => {
+            let who = data::list_recent_members(&app.pool, app.room.id, 50).await?;
+            let names: Vec<String> = who.into_iter().map(|u| u.handle).collect();
+            app.status = format!("who: {}", names.join(", "));
+        }
+    }
+    Ok(())
 }

@@ -183,6 +183,76 @@ pub async fn message_view_by_id(pool: &PgPool, id: i64) -> Result<Option<Message
     Ok(row)
 }
 
+pub async fn change_handle(pool: &PgPool, user_id: i64, new_handle: &str) -> Result<User> {
+    let mut tx = pool.begin().await?;
+    let old = sqlx::query_as::<_, User>(
+        r#"select id, fingerprint_sha256, pubkey_type, handle, created_at, last_seen_at
+           from users where id=$1 for update"#,
+    )
+    .bind(user_id)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let updated = sqlx::query_as::<_, User>(
+        r#"update users set handle=$1 where id=$2
+           returning id, fingerprint_sha256, pubkey_type, handle, created_at, last_seen_at"#,
+    )
+    .bind(new_handle)
+    .bind(user_id)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let _ = sqlx::query(
+        r#"insert into name_changes(user_id, old_handle, new_handle)
+           values($1,$2,$3)"#,
+    )
+    .bind(user_id)
+    .bind(&old.handle)
+    .bind(new_handle)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+    Ok(updated)
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct RoomSummary {
+    pub id: i64,
+    pub name: String,
+}
+
+pub async fn list_rooms(pool: &PgPool) -> Result<Vec<RoomSummary>> {
+    let rows = sqlx::query_as::<_, RoomSummary>(
+        r#"select id, name from rooms where is_deleted=false order by name asc"#,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct WhoSummary {
+    pub id: i64,
+    pub handle: String,
+}
+
+pub async fn list_recent_members(pool: &PgPool, room_id: i64, limit: i64) -> Result<Vec<WhoSummary>> {
+    let rows = sqlx::query_as::<_, WhoSummary>(
+        r#"select u.id, u.handle
+           from room_members rm
+           join users u on u.id = rm.user_id
+           where rm.room_id = $1
+           order by rm.last_joined_at desc
+           limit $2"#,
+    )
+    .bind(room_id)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 fn random_handle() -> String {
     // simple: usr-<8hex> from random u32
     let n: u32 = rand::thread_rng().gen();
