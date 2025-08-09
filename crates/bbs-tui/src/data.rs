@@ -237,7 +237,11 @@ pub struct WhoSummary {
     pub handle: String,
 }
 
-pub async fn list_recent_members(pool: &PgPool, room_id: i64, limit: i64) -> Result<Vec<WhoSummary>> {
+pub async fn list_recent_members(
+    pool: &PgPool,
+    room_id: i64,
+    limit: i64,
+) -> Result<Vec<WhoSummary>> {
     let rows = sqlx::query_as::<_, WhoSummary>(
         r#"select u.id, u.handle
            from room_members rm

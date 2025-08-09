@@ -14,7 +14,9 @@ pub enum Command {
 
 pub fn parse_command(s: &str) -> Option<Command> {
     let s = s.trim();
-    if !s.starts_with('/') { return None; }
+    if !s.starts_with('/') {
+        return None;
+    }
     let rest = &s[1..];
     let mut parts = rest.splitn(2, ' ');
     let cmd = parts.next().unwrap_or("");
@@ -25,7 +27,11 @@ pub fn parse_command(s: &str) -> Option<Command> {
         "me" => Some(Command::Me(arg)),
         "nick" | "name" => Some(Command::Nick(arg)),
         "join" => Some(Command::Join(arg)),
-        "leave" => Some(Command::Leave(if arg.is_empty() { None } else { Some(arg) })),
+        "leave" => Some(Command::Leave(if arg.is_empty() {
+            None
+        } else {
+            Some(arg)
+        })),
         "rooms" => Some(Command::Rooms),
         "who" => Some(Command::Who(if arg.is_empty() { None } else { Some(arg) })),
         _ => Some(Command::Help),

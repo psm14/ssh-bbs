@@ -20,11 +20,11 @@ struct NotifyPayload {
     id: i64,
 }
 
-pub async fn spawn_listener(pool: PgPool, room_id: i64, tx: mpsc::Sender<Event>) {
+pub async fn spawn_listener(pool: PgPool, tx: mpsc::Sender<Event>) {
     tokio::spawn(async move {
         let mut backoff_secs = 1u64;
         loop {
-            match run_once(&pool, room_id, &tx).await {
+            match run_once(&pool, &tx).await {
                 Ok(_) => {
                     backoff_secs = 1;
                 }
@@ -38,13 +38,13 @@ pub async fn spawn_listener(pool: PgPool, room_id: i64, tx: mpsc::Sender<Event>)
     });
 }
 
-async fn run_once(pool: &PgPool, room: i64, tx: &mpsc::Sender<Event>) -> Result<()> {
+async fn run_once(pool: &PgPool, tx: &mpsc::Sender<Event>) -> Result<()> {
     let mut listener = PgListener::connect_with(pool).await?;
     listener.listen("room_events").await?;
     loop {
         let n = listener.recv().await?;
         if let Ok(p) = serde_json::from_str::<NotifyPayload>(&n.payload()) {
-            if p.t == "msg" && p.room_id == room {
+            if p.t == "msg" {
                 let _ = tx
                     .send(Event::Message {
                         id: p.id,
