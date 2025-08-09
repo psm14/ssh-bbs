@@ -45,8 +45,8 @@ async fn main() -> Result<()> {
     let room = data::ensure_room_exists(&pool, &cfg.default_room, user.id).await?;
     data::join_room(&pool, room.id, user.id).await?;
 
-    // start UI runtime (placeholder)
-    ui::run_placeholder().await?;
+    // start UI runtime (skeleton)
+    ui::run().await?;
 
     Ok(())
 }
