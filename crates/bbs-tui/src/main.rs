@@ -45,8 +45,18 @@ async fn main() -> Result<()> {
     let room = data::ensure_room_exists(&pool, &cfg.default_room, user.id).await?;
     data::join_room(&pool, room.id, user.id).await?;
 
-    // start UI runtime (skeleton)
-    ui::run().await?;
+    // start UI runtime (interactive)
+    let fp_short = cfg
+        .pubkey_sha256
+        .as_deref()
+        .map(crate::util::fp_short)
+        .unwrap_or_else(|| "".into());
+    let opts = ui::UiOpts {
+        history_load: cfg.history_load,
+        msg_max_len: cfg.msg_max_len,
+        fp_short,
+    };
+    ui::run(pool.clone(), user, room, opts).await?;
 
     Ok(())
 }

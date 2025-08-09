@@ -23,6 +23,16 @@ pub struct Room {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct Message {
+    pub id: i64,
+    pub room_id: i64,
+    pub user_id: i64,
+    pub body: String,
+    pub created_at: DateTime<Utc>,
+    pub deleted_at: Option<DateTime<Utc>>,
+}
+
 pub async fn upsert_user_by_fp(pool: &PgPool, fp: &str, key_type: &str) -> Result<User> {
     // try select existing first
     if let Some(u) = sqlx::query_as::<_, User>(
@@ -109,6 +119,40 @@ pub async fn join_room(pool: &PgPool, room_id: i64, user_id: i64) -> Result<()> 
     .execute(pool)
     .await?;
     Ok(())
+}
+
+pub async fn recent_messages(pool: &PgPool, room_id: i64, limit: i64) -> Result<Vec<Message>> {
+    let rows = sqlx::query_as::<_, Message>(
+        r#"select id, room_id, user_id, body, created_at, deleted_at
+           from messages
+           where room_id = $1 and deleted_at is null
+           order by created_at desc
+           limit $2"#,
+    )
+    .bind(room_id)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().rev().collect())
+}
+
+pub async fn insert_message(
+    pool: &PgPool,
+    room_id: i64,
+    user_id: i64,
+    body: &str,
+) -> Result<Message> {
+    let msg = sqlx::query_as::<_, Message>(
+        r#"insert into messages(room_id, user_id, body)
+           values($1,$2,$3)
+           returning id, room_id, user_id, body, created_at, deleted_at"#,
+    )
+    .bind(room_id)
+    .bind(user_id)
+    .bind(body)
+    .fetch_one(pool)
+    .await?;
+    Ok(msg)
 }
 
 fn random_handle() -> String {

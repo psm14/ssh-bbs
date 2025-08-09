@@ -44,22 +44,22 @@
 
 ## m2 — tui foundation (non-network)
 
-* [ ] add crates: `ratatui`, `crossterm`, `tui-textarea` (or diy), `anyhow` (for ergonomics)
+* [x] add crates: `ratatui`, `crossterm`, (diy input), `anyhow`
 * [x] boot skeleton
 
   * [x] read env: `BBS_PUBKEY_SHA256`, `BBS_PUBKEY_TYPE`, `REMOTE_ADDR`, `DATABASE_URL`, `BBS_DEFAULT_ROOM`
   * [x] establish db pool
   * [x] upsert user by fingerprint; create random ascii handle if new
-* [ ] layout
+* [x] layout
 
-  * [ ] main messages pane
+  * [x] main messages pane
   * [ ] right sidebar (rooms + unread)
-  * [ ] bottom input line
-  * [ ] statusline (nick, room, token bucket, fp short)
-* [ ] input loop
+  * [x] bottom input line
+  * [x] statusline (nick, room, fp short)
+* [x] input loop
 
-  * [ ] key handling: enter/pgup/pgdn/tab/esc/ctrl+c
-  * [ ] slash command parser stub
+  * [x] key handling: enter/esc/ctrl+c (pgup/pgdn/tab TBD)
+  * [x] slash command parser stub
 * [ ] rendering helpers
 
   * [ ] timestamp `[hh:mm:ss]` utc
@@ -100,10 +100,10 @@
 * [ ] `/who [room]` (recent active = `last_joined_at` or last message timestamp)
 * [ ] `/me <action>` (client-side formatting)
 * [ ] `/help`, `/quit`
-* [ ] message send path
+* [x] message send path
 
-  * [ ] trim + reject empty
-  * [ ] enforce `≤ BBS_MSG_MAX_LEN`
+  * [x] trim + reject empty
+  * [x] enforce `≤ BBS_MSG_MAX_LEN`
 
 ## m5 — server-side rate limiting (pg-only)
 
