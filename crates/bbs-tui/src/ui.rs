@@ -15,7 +15,10 @@ use ratatui::{
 use sqlx::PgPool;
 use std::{io, time::Duration};
 
-use crate::data::{self, Message, Room, User};
+use crate::data::{self, MessageView, Room, User};
+use crate::realtime;
+use std::collections::HashSet;
+use tokio::sync::mpsc;
 
 pub struct UiOpts {
     pub history_load: u32,
@@ -30,7 +33,8 @@ struct App {
     opts: UiOpts,
     input: String,
     status: String,
-    messages: Vec<Message>,
+    messages: Vec<MessageView>,
+    seen_ids: HashSet<i64>,
     running: bool,
 }
 
@@ -45,7 +49,7 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
 
     // preload messages
     let mut app = App {
-        messages: data::recent_messages(&pool, room.id, opts.history_load as i64).await?,
+        messages: data::recent_messages_view(&pool, room.id, opts.history_load as i64).await?,
         pool,
         user,
         room,
@@ -53,11 +57,32 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
         input: String::new(),
         status: String::from("/help for commands"),
         running: true,
+        seen_ids: HashSet::new(),
     };
+    for m in &app.messages {
+        app.seen_ids.insert(m.id);
+    }
+
+    // realtime listener
+    let (tx, mut rx) = mpsc::channel::<realtime::Event>(128);
+    realtime::spawn_listener(app.pool.clone(), app.room.id, tx).await;
 
     // event loop
     while app.running {
         draw(&mut terminal, &app)?;
+        // drain realtime events
+        while let Ok(ev) = rx.try_recv() {
+            match ev {
+                realtime::Event::Message { id, .. } => {
+                    if let Some(v) = data::message_view_by_id(&app.pool, id).await? {
+                        if !app.seen_ids.contains(&v.id) {
+                            app.seen_ids.insert(v.id);
+                            app.messages.push(v);
+                        }
+                    }
+                }
+            }
+        }
         if event::poll(Duration::from_millis(200))? {
             if let Event::Key(k) = event::read()? {
                 handle_key(&mut app, k).await?;
@@ -105,12 +130,7 @@ fn draw(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &App) -> Res
             .iter()
             .map(|m| {
                 let ts = m.created_at.format("%H:%M:%S");
-                Line::from(format!(
-                    "[{}] {}: {}",
-                    ts,
-                    app.user.handle,
-                    sanitize(&m.body)
-                ))
+                Line::from(format!("[{}] {}: {}", ts, m.user_handle, sanitize(&m.body)))
             })
             .collect();
         let messages =
@@ -161,7 +181,16 @@ async fn handle_key(app: &mut App, k: KeyEvent) -> Result<()> {
             }
             // send
             let msg = data::insert_message(&app.pool, app.room.id, app.user.id, s).await?;
-            app.messages.push(msg);
+            let mv = MessageView {
+                id: msg.id,
+                room_id: msg.room_id,
+                user_id: msg.user_id,
+                user_handle: app.user.handle.clone(),
+                body: msg.body,
+                created_at: msg.created_at,
+            };
+            app.seen_ids.insert(mv.id);
+            app.messages.push(mv);
             app.status = "sent".into();
             app.input.clear();
         }

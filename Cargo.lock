@@ -118,6 +118,7 @@ dependencies = [
  "rand",
  "ratatui",
  "serde",
+ "serde_json",
  "sqlx",
  "tokio",
  "tracing",

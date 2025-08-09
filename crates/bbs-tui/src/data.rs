@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
-use rand::{distributions::Alphanumeric, Rng};
+use rand::Rng;
 use sqlx::PgPool;
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -31,6 +31,16 @@ pub struct Message {
     pub body: String,
     pub created_at: DateTime<Utc>,
     pub deleted_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct MessageView {
+    pub id: i64,
+    pub room_id: i64,
+    pub user_id: i64,
+    pub user_handle: String,
+    pub body: String,
+    pub created_at: DateTime<Utc>,
 }
 
 pub async fn upsert_user_by_fp(pool: &PgPool, fp: &str, key_type: &str) -> Result<User> {
@@ -121,12 +131,17 @@ pub async fn join_room(pool: &PgPool, room_id: i64, user_id: i64) -> Result<()> 
     Ok(())
 }
 
-pub async fn recent_messages(pool: &PgPool, room_id: i64, limit: i64) -> Result<Vec<Message>> {
-    let rows = sqlx::query_as::<_, Message>(
-        r#"select id, room_id, user_id, body, created_at, deleted_at
-           from messages
-           where room_id = $1 and deleted_at is null
-           order by created_at desc
+pub async fn recent_messages_view(
+    pool: &PgPool,
+    room_id: i64,
+    limit: i64,
+) -> Result<Vec<MessageView>> {
+    let rows = sqlx::query_as::<_, MessageView>(
+        r#"select m.id, m.room_id, m.user_id, u.handle as user_handle, m.body, m.created_at
+           from messages m
+           join users u on u.id = m.user_id
+           where m.room_id = $1 and m.deleted_at is null
+           order by m.created_at desc
            limit $2"#,
     )
     .bind(room_id)
@@ -153,6 +168,19 @@ pub async fn insert_message(
     .fetch_one(pool)
     .await?;
     Ok(msg)
+}
+
+pub async fn message_view_by_id(pool: &PgPool, id: i64) -> Result<Option<MessageView>> {
+    let row = sqlx::query_as::<_, MessageView>(
+        r#"select m.id, m.room_id, m.user_id, u.handle as user_handle, m.body, m.created_at
+           from messages m
+           join users u on u.id = m.user_id
+           where m.id = $1"#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
 }
 
 fn random_handle() -> String {
