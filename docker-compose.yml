@@ -21,10 +21,13 @@ services:
       DATABASE_URL: postgres://bbs:bbs@postgres:5432/bbs
       BBS_CLIENT_PATH: /app/bbs-tui
       BBS_DEFAULT_ROOM: lobby
+      BBS_HOSTKEY_PATH: /app/host-keys/hostkey.pem
     depends_on:
       - postgres
     ports:
       - "0.0.0.0:2222:2222"
+    volumes:
+      - hostkeys:/app/host-keys
 
   # Optional Cloudflare tunnel
   # cloudflared:
@@ -37,3 +40,4 @@ services:
 
 volumes:
   pg: {}
+  hostkeys: {}
