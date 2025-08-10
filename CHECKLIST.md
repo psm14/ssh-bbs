@@ -18,7 +18,7 @@
 
   * [x] rust: `rustup override set stable` in repo
   * [ ] add rust `clippy` + `rustfmt` configs
-  * [ ] go: `gofmt` + `golangci-lint` (optional)
+  * [x] go: `gofmt` + `golangci-lint` (optional)
 * [x] license + readme
 * [x] `.editorconfig`, `.gitignore` (target/, node\_modules/ just in case)
 
@@ -72,7 +72,7 @@
   * [x] `LISTEN room_events;` using `sqlx::postgres::PgListener`
 * [x] payload model
 
-  * [ ] json `{"t":"msg","room_id":<id>,"id":<id>}`
+  * [x] json `{"t":"msg","room_id":<id>,"id":<id>}`
 * [x] on receive:
 
   * [x] if joined to room: `select * from messages where id=$1`
@@ -153,7 +153,7 @@
 
 ## m8 — docker-compose + cloudflare
 
-* [ ] compose services: `postgres`, `ssh-gateway`, `cloudflared`
+* [x] compose services: `postgres`, `ssh-gateway`, `cloudflared`
 * [x] ports: expose `2222` for local; cf tunnel runs with `TUNNEL_TOKEN`
 * [x] volumes: `pg` persistent
 * [x] env: inject `DATABASE_URL` into gateway
