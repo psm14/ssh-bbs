@@ -198,11 +198,11 @@
 
 ## m12 — tests
 
-* [ ] unit (rust)
+* [x] unit (rust)
 
-  * [ ] command parsing `/nick|/join|/me`
-  * [ ] validators (nick/room regex; length)
-  * [ ] token bucket behavior
+  * [x] command parsing `/nick|/join|/me`
+  * [x] validators (nick/room regex; length)
+  * [x] token bucket behavior
 * [ ] integration (rust + pg)
 
   * [ ] migrations apply cleanly

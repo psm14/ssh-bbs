@@ -39,3 +39,23 @@ pub fn parse_command(s: &str) -> Option<Command> {
         _ => Some(Command::Help),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_nick_join_me() {
+        assert_eq!(parse_command("/nick alice"), Some(Command::Nick("alice".into())));
+        assert_eq!(parse_command("/join lobby"), Some(Command::Join("lobby".into())));
+        assert_eq!(parse_command("/me waves"), Some(Command::Me("waves".into())));
+    }
+
+    #[test]
+    fn parses_variants_and_defaults() {
+        assert_eq!(parse_command("/help"), Some(Command::Help));
+        assert_eq!(parse_command("/who"), Some(Command::Who(None)));
+        assert_eq!(parse_command("/leave"), Some(Command::Leave(None)));
+        assert_eq!(parse_command("/leave lobby"), Some(Command::Leave(Some("lobby".into()))));
+    }
+}

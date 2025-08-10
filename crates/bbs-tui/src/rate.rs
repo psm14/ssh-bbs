@@ -46,3 +46,21 @@ impl TokenBucket {
 
     pub fn capacity(&self) -> f64 { self.capacity }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::thread;
+    use std::time::Duration;
+
+    #[test]
+    fn bucket_basic() {
+        let mut b = TokenBucket::new(6); // 6/min = 0.1/s
+        for _ in 0..6 {
+            assert!(b.try_consume(1.0));
+        }
+        assert!(!b.try_consume(1.0));
+        thread::sleep(Duration::from_millis(1200)); // ~0.12 tokens
+        assert!(b.try_consume(0.1));
+    }
+}
