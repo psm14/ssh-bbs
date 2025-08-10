@@ -19,7 +19,7 @@
   * [x] rust: `rustup override set stable` in repo
   * [ ] add rust `clippy` + `rustfmt` configs
   * [ ] go: `gofmt` + `golangci-lint` (optional)
-* [ ] license + readme
+* [x] license + readme
 * [x] `.editorconfig`, `.gitignore` (target/, node\_modules/ just in case)
 
 ## m1 — database + migrations
