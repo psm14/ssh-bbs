@@ -45,6 +45,7 @@ jobs:
       - name: Cargo subcommand shim for sqlx
         run: |
           mkdir -p "$HOME/.cargo/bin"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
           SQLX_BIN="$(command -v sqlx)"
           ln -sf "$SQLX_BIN" "$HOME/.cargo/bin/cargo-sqlx"
 
