@@ -22,6 +22,7 @@ services:
       BBS_CLIENT_PATH: /app/bbs-tui
       BBS_DEFAULT_ROOM: lobby
       BBS_HOSTKEY_PATH: /app/host-keys/hostkey.pem
+      BBS_ADMIN_FP: ${BBS_ADMIN_FP}
     depends_on:
       - postgres
     ports:
