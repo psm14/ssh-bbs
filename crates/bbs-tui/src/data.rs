@@ -299,7 +299,6 @@ pub struct RoomSummary {
     pub name: String,
 }
 
-
 pub async fn list_joined_rooms(pool: &PgPool, user_id: i64) -> Result<Vec<RoomSummary>> {
     let rows = sqlx::query_as::<_, RoomSummary>(
         r#"select r.id, r.name
