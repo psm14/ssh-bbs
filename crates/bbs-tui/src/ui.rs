@@ -8,7 +8,7 @@ use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Modifier, Style},
-    text::{Line, Span},
+    text::{Line, Span, Spans},
     widgets::{Block, Borders, Paragraph},
     Terminal,
 };
@@ -37,8 +37,11 @@ struct App {
     input: String,
     status: String,
     messages: Vec<MessageView>,
+    // scrolling: 0 = bottom pinned
+    scroll_y: u16,
     seen_ids: HashSet<i64>,
     rooms: Vec<RoomEntry>,
+    sidebar_selected: Option<usize>,
     running: bool,
 }
 
@@ -69,7 +72,9 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
         status: String::from("/help for commands"),
         running: true,
         seen_ids: HashSet::new(),
+        scroll_y: 0,
         rooms: vec![],
+        sidebar_selected: None,
     };
     for m in &app.messages {
         app.seen_ids.insert(m.id);

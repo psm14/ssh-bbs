@@ -53,53 +53,53 @@
 * [x] layout
 
   * [x] main messages pane
-  * [ ] right sidebar (rooms + unread)
+  * [x] right sidebar (rooms + unread)
   * [x] bottom input line
   * [x] statusline (nick, room, fp short)
 * [x] input loop
 
   * [x] key handling: enter/esc/ctrl+c (pgup/pgdn/tab TBD)
   * [x] slash command parser stub
-* [ ] rendering helpers
+* [x] rendering helpers
 
-  * [ ] timestamp `[hh:mm:ss]` utc
-  * [ ] escape ansi/control chars in message bodies
+  * [x] timestamp `[hh:mm:ss]` utc
+  * [x] escape ansi/control chars in message bodies
 
 ## m3 — realtime via listen/notify
 
-* [ ] add pg listener task
+* [x] add pg listener task
 
-  * [ ] `LISTEN room_events;` using `sqlx::postgres::PgListener`
-* [ ] payload model
+  * [x] `LISTEN room_events;` using `sqlx::postgres::PgListener`
+* [x] payload model
 
   * [ ] json `{"t":"msg","room_id":<id>,"id":<id>}`
-* [ ] on receive:
+* [x] on receive:
 
-  * [ ] if joined to room: `select * from messages where id=$1`
-  * [ ] append to buffer, update unread if room not focused
+  * [x] if joined to room: `select * from messages where id=$1`
+  * [x] append to buffer, update unread if room not focused
 * [ ] reconnect strategy
 
-  * [ ] exponential backoff on listener error
+  * [x] exponential backoff on listener error
   * [ ] fallback poll every 2s for `created_at > last_seen`
 
 ## m4 — commands + validations
 
-* [ ] `/nick <name>`
+* [x] `/nick <name>`
 
-  * [ ] validate ascii `[a-z0-9_-]{2,16}`
-  * [ ] `update users set handle=$new; insert into name_changes(...)`
-  * [ ] unique constraint error → show message
-* [ ] `/join <room>`
+  * [x] validate ascii `[a-z0-9_-]{2,16}`
+  * [x] `update users set handle=$new; insert into name_changes(...)`
+  * [x] unique constraint error → show message
+* [x] `/join <room>`
 
-  * [ ] validate `[a-z0-9_-]{1,24}`
-  * [ ] upsert room (with `created_by = current_user`)
-  * [ ] upsert `room_members`
-  * [ ] load last `BBS_HISTORY_LOAD` messages ordered desc then render
+  * [x] validate `[a-z0-9_-]{1,24}`
+  * [x] upsert room (with `created_by = current_user`)
+  * [x] upsert `room_members`
+  * [x] load last `BBS_HISTORY_LOAD` messages ordered desc then render
 * [ ] `/leave [room]` (no db delete; just ui focus/unsubscribe)
-* [ ] `/rooms` list
-* [ ] `/who [room]` (recent active = `last_joined_at` or last message timestamp)
-* [ ] `/me <action>` (client-side formatting)
-* [ ] `/help`, `/quit`
+* [x] `/rooms` list
+* [x] `/who [room]` (recent active = `last_joined_at` or last message timestamp)
+* [x] `/me <action>` (client-side formatting)
+* [x] `/help`, `/quit`
 * [x] message send path
 
   * [x] trim + reject empty
@@ -107,7 +107,7 @@
 
 ## m5 — server-side rate limiting (pg-only)
 
-* [ ] config env: `BBS_RATE_PER_MIN` (default 10)
+* [x] config env: `BBS_RATE_PER_MIN` (default 10)
 * [ ] `insert ... where` gate:
 
   * [ ] cte counts recent per user in last minute
@@ -154,9 +154,9 @@
 ## m8 — docker-compose + cloudflare
 
 * [ ] compose services: `postgres`, `ssh-gateway`, `cloudflared`
-* [ ] ports: expose `2222` for local; cf tunnel runs with `TUNNEL_TOKEN`
-* [ ] volumes: `pg` persistent
-* [ ] env: inject `DATABASE_URL` into gateway
+* [x] ports: expose `2222` for local; cf tunnel runs with `TUNNEL_TOKEN`
+* [x] volumes: `pg` persistent
+* [x] env: inject `DATABASE_URL` into gateway
 * [ ] sanity test locally: `ssh -p 2222 user@localhost` (any key)
 * [ ] sanity test via cf: set up tunnel to gateway:2222
 
@@ -171,26 +171,26 @@
 
 ## m10 — logging + config
 
-* [ ] structured logs
+* [x] structured logs
 
-  * [ ] rust: `tracing` json formatter to stdout
-  * [ ] go: log connect/disconnect, key type, fp short
-* [ ] cli/env config
+  * [x] rust: `tracing` json formatter to stdout
+  * [x] go: log connect/disconnect, key type, fp short
+* [x] cli/env config
 
-  * [ ] rust: read env with sane defaults, print on boot
+  * [x] rust: read env with sane defaults, print on boot
   * [ ] `--history-load`, `--rate-per-min`, `--retention-days` override env (optional)
 
 ## m11 — security hardening (baseline)
 
 * [ ] ssh:
 
-  * [ ] passwords off, only pubkeys
-  * [ ] restrict key algos to modern set
+  * [x] passwords off, only pubkeys
+  * [x] restrict key algos to modern set
   * [ ] cgroups/ulimits in compose (cpu/mem)
 * [ ] data:
 
-  * [ ] store fingerprint only, not full pubkey blob
-  * [ ] do not log message bodies
+  * [x] store fingerprint only, not full pubkey blob
+  * [x] do not log message bodies
 * [ ] input:
 
   * [ ] enforce ascii for nicks; nfkc + control-strip for message bodies
