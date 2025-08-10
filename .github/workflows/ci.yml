@@ -48,9 +48,11 @@ jobs:
           done
 
       - name: Run migrations
+        working-directory: crates/bbs-tui
         run: sqlx migrate run
 
       - name: Prepare SQLx offline data
+        working-directory: crates/bbs-tui
         run: cargo sqlx prepare -- --all-features
 
       - name: Format check
