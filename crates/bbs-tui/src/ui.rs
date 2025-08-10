@@ -160,14 +160,16 @@ fn draw(
             .split(size);
 
         // status line
+        let admin_tag = if app.opts.is_admin { " | admin" } else { "" };
         let title = format!(
-            "{} @ {} | msgs:{} | rate:{}/{} | fp:{}",
+            "{} @ {} | msgs:{} | rate:{}/{} | fp:{}{}",
             app.user.handle,
             app.room.name,
             app.messages.len(),
             tokens_left,
             tokens_cap,
-            app.opts.fp_short
+            app.opts.fp_short,
+            admin_tag,
         );
         let status = Paragraph::new(Span::styled(
             title,
