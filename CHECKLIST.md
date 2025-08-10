@@ -120,14 +120,14 @@
 
 ## m6 — room deletion by creator
 
-* [ ] room model: `created_by`, `is_deleted`, `deleted_at`
-* [ ] `/roomdel <name>`
+* [x] room model: `created_by`, `is_deleted`, `deleted_at`
+* [x] `/roomdel <name>`
 
-  * [ ] ensure `created_by == me`
-  * [ ] `update rooms set is_deleted=true, deleted_at=now() where ... and is_deleted=false`
-  * [ ] prevent joins to `is_deleted` rooms
-  * [ ] exclude from `/rooms` listing
-* [ ] acceptance: creator can delete; others get permission error
+  * [x] ensure `created_by == me`
+  * [x] `update rooms set is_deleted=true, deleted_at=now() where ... and is_deleted=false`
+  * [x] prevent joins to `is_deleted` rooms
+  * [x] exclude from `/rooms` listing
+  * [ ] acceptance: creator can delete; others get permission error
 
 ## m7 — ssh gateway (go, wish)
 

@@ -10,6 +10,7 @@ pub enum Command {
     Leave(Option<String>),
     Rooms,
     Who(Option<String>),
+    RoomDel(String),
 }
 
 pub fn parse_command(s: &str) -> Option<Command> {
@@ -34,6 +35,7 @@ pub fn parse_command(s: &str) -> Option<Command> {
         })),
         "rooms" => Some(Command::Rooms),
         "who" => Some(Command::Who(if arg.is_empty() { None } else { Some(arg) })),
+        "roomdel" | "rdel" => Some(Command::RoomDel(arg)),
         _ => Some(Command::Help),
     }
 }

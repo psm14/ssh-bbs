@@ -386,7 +386,16 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                 app.status = "invalid room [a-z0-9_-]{1,24}".into();
                 return Ok(());
             }
-            let room = data::ensure_room_exists(&app.pool, name, app.user.id).await?;
+            let room = match data::ensure_room_exists(&app.pool, name, app.user.id).await {
+                Ok(r) => r,
+                Err(e) => {
+                    if e.to_string().contains("room_deleted") {
+                        app.status = "room is deleted".into();
+                        return Ok(());
+                    }
+                    return Err(e);
+                }
+            };
             data::join_room(&app.pool, room.id, app.user.id).await?;
             app.room = room;
             app.messages =
@@ -407,6 +416,25 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                 });
             }
             app.status = "joined".into();
+        }
+        Command::RoomDel(name) => {
+            let name = name.trim();
+            if !valid_room_name(name) {
+                app.status = "usage: /roomdel <name> (a-z0-9_-){1,24}".into();
+                return Ok(());
+            }
+            let ok = data::soft_delete_room_by_creator(&app.pool, name, app.user.id).await?;
+            if ok {
+                app.status = format!("room '{}' deleted", name);
+                // refresh rooms list
+                let list = data::list_rooms(&app.pool).await?;
+                app.rooms = list
+                    .into_iter()
+                    .map(|r| RoomEntry { id: r.id, name: r.name, unread: 0 })
+                    .collect();
+            } else {
+                app.status = "not room creator or already deleted".into();
+            }
         }
         Command::Leave(_name) => {
             app.status = "left (ui only)".into();

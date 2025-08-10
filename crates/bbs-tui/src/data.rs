@@ -103,6 +103,9 @@ pub async fn ensure_room_exists(pool: &PgPool, name: &str, created_by: i64) -> R
     .fetch_optional(pool)
     .await?
     {
+        if r.is_deleted {
+            return Err(anyhow!("room_deleted"));
+        }
         return Ok(r);
     }
 
@@ -236,6 +239,23 @@ pub async fn change_handle(pool: &PgPool, user_id: i64, new_handle: &str) -> Res
 
     tx.commit().await?;
     Ok(updated)
+}
+
+pub async fn soft_delete_room_by_creator(
+    pool: &PgPool,
+    name: &str,
+    creator_id: i64,
+) -> Result<bool> {
+    let res = sqlx::query(
+        r#"update rooms
+            set is_deleted = true, deleted_at = now()
+          where name = $1 and created_by = $2 and is_deleted = false"#,
+    )
+    .bind(name)
+    .bind(creator_id)
+    .execute(pool)
+    .await?;
+    Ok(res.rows_affected() > 0)
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
