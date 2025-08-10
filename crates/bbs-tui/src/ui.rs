@@ -440,8 +440,65 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                 app.status = "not room creator or already deleted".into();
             }
         }
-        Command::Leave(_name) => {
-            app.status = "left (ui only)".into();
+        Command::Leave(name_opt) => {
+            // Determine room to leave
+            let target_room_name_owned = name_opt.unwrap_or_else(|| app.room.name.clone());
+            let target_name = target_room_name_owned.trim();
+            if target_name.is_empty() {
+                app.status = "usage: /leave [room]".into();
+                return Ok(());
+            }
+            // Find room entry by name
+            if let Some(idx) = app.rooms.iter().position(|r| r.name == target_name) {
+                let leaving_id = app.rooms[idx].id;
+                let leaving_is_current = leaving_id == app.room.id;
+
+                if leaving_is_current {
+                    // Need another room to focus
+                    if app.rooms.len() <= 1 {
+                        app.status = "cannot leave the last room".into();
+                        return Ok(());
+                    }
+                    // pick next room different from current
+                    let mut candidate = None;
+                    for off in 0..app.rooms.len() {
+                        let j = (idx + 1 + off) % app.rooms.len();
+                        if app.rooms[j].id != leaving_id {
+                            candidate = Some(app.rooms[j].id);
+                            break;
+                        }
+                    }
+                    if let Some(next_id) = candidate {
+                        // load next room by id (name lookup from list)
+                        if let Some(re) = app.rooms.iter().find(|r| r.id == next_id) {
+                            let room = data::ensure_room_exists(&app.pool, &re.name, app.user.id).await?;
+                            data::join_room(&app.pool, room.id, app.user.id).await?;
+                            app.room = room;
+                            app.messages = data::recent_messages_view(
+                                &app.pool,
+                                app.room.id,
+                                app.opts.history_load as i64,
+                            )
+                            .await?;
+                            app.seen_ids.clear();
+                            for m in &app.messages {
+                                app.seen_ids.insert(m.id);
+                            }
+                        }
+                    }
+                    // remove leaving room from sidebar
+                    if let Some(idx2) = app.rooms.iter().position(|r| r.id == leaving_id) {
+                        app.rooms.remove(idx2);
+                    }
+                    app.status = format!("left '{}'", target_name);
+                } else {
+                    // Leaving a non-focused room: just remove from sidebar
+                    app.rooms.remove(idx);
+                    app.status = format!("left '{}'", target_name);
+                }
+            } else {
+                app.status = "room not in sidebar".into();
+            }
         }
         Command::Rooms => {
             let rooms = data::list_rooms(&app.pool).await?;

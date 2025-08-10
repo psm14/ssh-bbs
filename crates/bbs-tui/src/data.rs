@@ -2,7 +2,6 @@ use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use rand::Rng;
 use sqlx::PgPool;
-use std::time::Duration as StdDuration;
 
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct User {
