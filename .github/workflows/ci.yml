@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  rust:
+    name: Rust build and tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bbs
+          POSTGRES_PASSWORD: bbs
+          POSTGRES_DB: bbs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bbs"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CARGO_TERM_COLOR: always
+      DATABASE_URL: postgres://bbs:bbs@localhost:5432/bbs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U bbs && break
+            sleep 1
+          done
+
+      - name: Build bbs-tui
+        run: cargo build -p bbs-tui --locked --verbose
+
+      - name: Test bbs-tui
+        run: cargo test -p bbs-tui --locked --verbose
+
+  go:
+    name: Go build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+
+      - name: Build gateway
+        working-directory: crates/bbs-ssh-gateway
+        run: go build ./...
+
+      - name: Test gateway
+        working-directory: crates/bbs-ssh-gateway
+        run: go test ./...
+

@@ -220,10 +220,10 @@
 
 ## m13 — ci + release
 
-* [ ] github actions (or whatever)
+* [x] github actions (or whatever)
 
-  * [ ] rust: build + `sqlx prepare` (offline) + tests
-  * [ ] go: build gateway
+  * [x] rust: build + tests (with Postgres service)
+  * [x] go: build gateway
   * [ ] docker: build/push multi-arch images for `bbs-tui` and `bbs-ssh-gateway`
 * [ ] semver tag + changelog
 * [ ] sample `.env.example`
