@@ -108,15 +108,15 @@
 ## m5 — server-side rate limiting (pg-only)
 
 * [x] config env: `BBS_RATE_PER_MIN` (default 10)
-* [ ] `insert ... where` gate:
+* [x] `insert ... where` gate:
 
-  * [ ] cte counts recent per user in last minute
-  * [ ] only insert if `< rate`
-* [ ] client-side token bucket
+  * [x] cte counts recent per user in last minute
+  * [x] only insert if `< rate`
+* [x] client-side token bucket
 
-  * [ ] burst = rate
-  * [ ] ui indicator for remaining tokens
-* [ ] friendly error on 429 condition (custom sqlx error mapping)
+  * [x] burst = rate
+  * [x] ui indicator for remaining tokens
+* [x] friendly error on 429 condition (custom sqlx error mapping)
 
 ## m6 — room deletion by creator
 

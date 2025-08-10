@@ -54,6 +54,7 @@ async fn main() -> Result<()> {
     let opts = ui::UiOpts {
         history_load: cfg.history_load,
         msg_max_len: cfg.msg_max_len,
+        rate_per_min: cfg.rate_per_min,
         fp_short,
     };
     ui::run(pool.clone(), user, room, opts).await?;

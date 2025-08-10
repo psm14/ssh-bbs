@@ -8,7 +8,7 @@ use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Modifier, Style},
-    text::{Line, Span, Spans},
+    text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
     Terminal,
 };
@@ -19,6 +19,7 @@ use crate::data::{self, MessageView, Room, User};
 use crate::input::{parse_command, Command};
 use crate::nick::valid_nick;
 use crate::realtime;
+use crate::rate::TokenBucket;
 use crate::rooms::valid_room_name;
 use std::collections::HashSet;
 use tokio::sync::mpsc;
@@ -27,6 +28,7 @@ pub struct UiOpts {
     pub history_load: u32,
     pub msg_max_len: usize,
     pub fp_short: String,
+    pub rate_per_min: u32,
 }
 
 struct App {
@@ -43,6 +45,7 @@ struct App {
     rooms: Vec<RoomEntry>,
     sidebar_selected: Option<usize>,
     running: bool,
+    bucket: TokenBucket,
 }
 
 #[derive(Debug, Clone)]
@@ -62,6 +65,7 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
     terminal.show_cursor()?;
 
     // preload messages
+    let bucket = TokenBucket::new(opts.rate_per_min);
     let mut app = App {
         messages: data::recent_messages_view(&pool, room.id, opts.history_load as i64).await?,
         pool,
@@ -75,6 +79,7 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
         scroll_y: 0,
         rooms: vec![],
         sidebar_selected: None,
+        bucket,
     };
     for m in &app.messages {
         app.seen_ids.insert(m.id);
@@ -104,7 +109,10 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
 
     // event loop
     while app.running {
-        draw(&mut terminal, &app)?;
+        // refresh rate bucket view
+        let tokens_left = app.bucket.peek_tokens().floor() as i32;
+        let tokens_cap = app.bucket.capacity().round() as i32;
+        draw(&mut terminal, &app, tokens_left, tokens_cap)?;
         // drain realtime events
         while let Ok(ev) = rx.try_recv() {
             match ev {
@@ -139,7 +147,12 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
     Ok(())
 }
 
-fn draw(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &App) -> Result<()> {
+fn draw(
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    app: &App,
+    tokens_left: i32,
+    tokens_cap: i32,
+) -> Result<()> {
     terminal.draw(|f| {
         let size = f.size();
         let chunks = Layout::default()
@@ -153,10 +166,12 @@ fn draw(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &App) -> Res
 
         // status line
         let title = format!(
-            "{} @ {} | msgs:{} | fp:{}",
+            "{} @ {} | msgs:{} | rate:{}/{} | fp:{}",
             app.user.handle,
             app.room.name,
             app.messages.len(),
+            tokens_left,
+            tokens_cap,
             app.opts.fp_short
         );
         let status = Paragraph::new(Span::styled(
@@ -237,8 +252,26 @@ async fn handle_key(app: &mut App, k: KeyEvent) -> Result<()> {
             if s.len() > app.opts.msg_max_len {
                 return Err(anyhow!("message too long"));
             }
+            // client-side rate bucket
+            if !app.bucket.try_consume(1.0) {
+                app.status = "rate limited (client)".into();
+                app.input.clear();
+                return Ok(());
+            }
             // send
-            let msg = data::insert_message(&app.pool, app.room.id, app.user.id, s).await?;
+            let res = data::insert_message(&app.pool, app.room.id, app.user.id, s).await;
+            let msg = match res {
+                Ok(m) => m,
+                Err(e) => {
+                    let msg = e.to_string();
+                    if msg.contains("rate_limited") {
+                        app.status = "rate limited (server)".into();
+                        return Ok(());
+                    } else {
+                        return Err(e);
+                    }
+                }
+            };
             let mv = MessageView {
                 id: msg.id,
                 room_id: msg.room_id,

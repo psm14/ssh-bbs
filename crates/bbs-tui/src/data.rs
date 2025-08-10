@@ -157,17 +157,39 @@ pub async fn insert_message(
     user_id: i64,
     body: &str,
 ) -> Result<Message> {
-    let msg = sqlx::query_as::<_, Message>(
-        r#"insert into messages(room_id, user_id, body)
-           values($1,$2,$3)
-           returning id, room_id, user_id, body, created_at, deleted_at"#,
+    // Server-side rate gate using CTE counting last-minute messages.
+    // The limit is provided via current_setting('bbs.rate_per_min', true) or env elsewhere.
+    // Here we pass the limit explicitly via SET LOCAL when available; otherwise default 10.
+    // Simpler: inline $4 limit param.
+    let rate_limit: i64 = std::env::var("BBS_RATE_PER_MIN")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(10);
+
+    let rec = sqlx::query_as::<_, Message>(
+        r#"
+with recent as (
+  select count(*)::bigint as c
+  from messages
+  where user_id = $2 and created_at > now() - interval '1 minute'
+)
+insert into messages(room_id, user_id, body)
+select $1, $2, $3
+where (select c from recent) < $4
+returning id, room_id, user_id, body, created_at, deleted_at
+        "#,
     )
     .bind(room_id)
     .bind(user_id)
     .bind(body)
-    .fetch_one(pool)
+    .bind(rate_limit)
+    .fetch_optional(pool)
     .await?;
-    Ok(msg)
+
+    match rec {
+        Some(m) => Ok(m),
+        None => Err(anyhow!("rate_limited")),
+    }
 }
 
 pub async fn message_view_by_id(pool: &PgPool, id: i64) -> Result<Option<MessageView>> {
