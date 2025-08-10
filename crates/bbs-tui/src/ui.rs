@@ -21,6 +21,7 @@ use crate::nick::valid_nick;
 use crate::rate::TokenBucket;
 use crate::realtime;
 use crate::rooms::valid_room_name;
+use crate::util::normalize_message;
 use std::collections::HashSet;
 use tokio::sync::mpsc;
 
@@ -252,6 +253,8 @@ async fn handle_key(app: &mut App, k: KeyEvent) -> Result<()> {
             if s.len() > app.opts.msg_max_len {
                 return Err(anyhow!("message too long"));
             }
+            // normalize body (nfkc + strip controls)
+            let s = normalize_message(s);
             // client-side rate bucket
             if !app.bucket.try_consume(1.0) {
                 app.status = "rate limited (client)".into();
@@ -259,7 +262,7 @@ async fn handle_key(app: &mut App, k: KeyEvent) -> Result<()> {
                 return Ok(());
             }
             // send
-            let res = data::insert_message(&app.pool, app.room.id, app.user.id, s).await;
+            let res = data::insert_message(&app.pool, app.room.id, app.user.id, &s).await;
             let msg = match res {
                 Ok(m) => m,
                 Err(e) => {
@@ -340,7 +343,7 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                 app.status = "usage: /me <action>".into();
                 return Ok(());
             }
-            let body = format!("* {} {}", app.user.handle, action.trim());
+            let body = format!("* {} {}", app.user.handle, normalize_message(action.trim()));
             let msg = data::insert_message(&app.pool, app.room.id, app.user.id, &body).await?;
             let mv = MessageView {
                 id: msg.id,

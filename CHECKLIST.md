@@ -186,15 +186,15 @@
 
   * [x] passwords off, only pubkeys
   * [x] restrict key algos to modern set
-  * [ ] cgroups/ulimits in compose (cpu/mem)
+  * [x] cgroups/ulimits in compose (cpu/mem/pids/nofile)
 * [ ] data:
 
   * [x] store fingerprint only, not full pubkey blob
   * [x] do not log message bodies
 * [ ] input:
 
-  * [ ] enforce ascii for nicks; nfkc + control-strip for message bodies
-  * [ ] escape ansi sequences before render
+  * [x] enforce ascii for nicks; NFKC + control-strip for message bodies
+  * [x] escape ansi/control sequences before render
 
 ## m12 — tests
 

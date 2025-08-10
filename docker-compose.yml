@@ -28,6 +28,15 @@ services:
       - "0.0.0.0:2222:2222"
     volumes:
       - hostkeys:/app/host-keys
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
+      nproc: 1024
+    pids_limit: 256
+    cpus: "0.50"
+    mem_limit: 256m
 
   # Optional Cloudflare tunnel
   # cloudflared:

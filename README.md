@@ -1,5 +1,7 @@
 # bbs-over-ssh
 
+[![CI](https://github.com/psm14/ssh-bbs/actions/workflows/ci.yml/badge.svg)](https://github.com/psm14/ssh-bbs/actions/workflows/ci.yml)
+
 A minimal multi-room chat (BBS) over SSH:
 
 - SSH gateway (Go, gliderlabs/wish) that authenticates via public keys and spawns a Rust TUI.
@@ -86,13 +88,31 @@ The gateway exports to the TUI:
 
 GitHub Actions runs Rust builds/tests (with a Postgres service) and Go builds/tests. See `.github/workflows/ci.yml`.
 
+## Production
+
+- Start Postgres and the SSH gateway with resource limits and restart policy:
+
+```
+docker compose -f docker-compose.yml up -d postgres ssh-gateway
+```
+
+- Optional: expose via Cloudflare Tunnel. Create a tunnel and set `TUNNEL_TOKEN`, then run:
+
+```
+export TUNNEL_TOKEN=xxxxxxxx
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d cloudflared
+```
+
+- The gateway listens on `:2222`. Point your DNS or CF tunnel to `ssh://<hostname>:2222`.
+- For persistence, host keys are stored in the named volume `hostkeys`.
+
 ## Security Notes
 
 - Keys only (modern algorithms); passwords/forwarding disabled in the gateway.
 - Store fingerprint (not full pubkey blob); do not log message bodies.
 - User-rendered content is sanitized in the TUI; timestamps in UTC.
+- Message bodies are normalized (NFKC) and control characters are stripped before send.
 
 ## License
 
 MIT — see LICENSE.
-

@@ -197,7 +197,7 @@ returning id;
 
 ## message flow
 
-1. user types → client validates bucket + length.
+1. user types → client validates bucket + length; normalizes body (NFKC) and strips controls.
 2. client `insert ... returning id`.
 3. `NOTIFY` fires via trigger; all clients get payload; if joined, select by id; render.
 
