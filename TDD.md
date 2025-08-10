@@ -210,6 +210,11 @@ BBS_MSG_MAX_LEN=1000
 BBS_RATE_PER_MIN=10
 BBS_RETENTION_DAYS=30
 BBS_HISTORY_LOAD=200
+
+Notes:
+
+- Both the Rust TUI and the Go SSH gateway will load a `.env` file at the repository root if present (via `dotenvy` and `godotenv` respectively). This makes local development simpler.
+- Docker Compose also reads a `.env` file for `${VAR}` substitution (e.g., `TUNNEL_TOKEN`).
 ```
 
 ## docker-compose (minimal)

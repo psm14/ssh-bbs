@@ -5,6 +5,7 @@ go 1.22
 require (
 	github.com/creack/pty v1.1.21
 	github.com/gliderlabs/ssh v0.3.5
+	github.com/joho/godotenv v1.5.1
 	golang.org/x/crypto v0.32.0
 )
 

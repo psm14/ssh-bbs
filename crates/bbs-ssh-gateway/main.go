@@ -17,10 +17,13 @@ import (
 
 	pty "github.com/creack/pty"
 	glssh "github.com/gliderlabs/ssh"
+	"github.com/joho/godotenv"
 	gossh "golang.org/x/crypto/ssh"
 )
 
 func main() {
+	// Load .env if present for local/dev
+	_ = godotenv.Load()
 	addr := ":2222"
 	clientPath := getenv("BBS_CLIENT_PATH", "/app/bbs-tui")
 	defaultRoom := getenv("BBS_DEFAULT_ROOM", "lobby")

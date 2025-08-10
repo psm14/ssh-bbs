@@ -226,7 +226,7 @@
   * [x] go: golangci-lint + build
   * [ ] docker: build/push multi-arch images for `bbs-tui` and `bbs-ssh-gateway`
 * [ ] semver tag + changelog
-* [ ] sample `.env.example`
+* [x] sample `.env.example`
 
 ## m14 — acceptance criteria (tick before ship)
 

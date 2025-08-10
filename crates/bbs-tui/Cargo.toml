@@ -17,6 +17,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter","fmt","json"] }
 unicode-segmentation = "1"
 unicode-normalization = "0.1"
 ratatui = "0.26"
+dotenvy = "0.15"
 
 [profile.release]
 opt-level = 3

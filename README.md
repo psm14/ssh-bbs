@@ -21,6 +21,13 @@ See TDD.md for the detailed design and CHECKLIST.md for implementation progress.
 
 Requirements: Docker, Rust (stable), Go 1.22+.
 
+Optional: copy the example env and edit values
+
+```
+cp .env.example .env
+# update DATABASE_URL and other settings as needed
+```
+
 1) Start Postgres
 
 ```
@@ -55,6 +62,12 @@ The gateway injects session details as env vars and launches the TUI on a PTY. O
 - `BBS_RATE_PER_MIN` (default 10)
 - `BBS_RETENTION_DAYS` (default 30)
 - `BBS_HISTORY_LOAD` (default 200)
+  
+You can place these in a `.env` file at the repository root:
+
+- The Rust TUI loads `.env` via `dotenvy` before reading env.
+- The Go SSH gateway loads `.env` via `godotenv`.
+- Docker Compose also reads `.env` for variable substitution like `${TUNNEL_TOKEN}`.
 
 Gateway-only:
 
@@ -96,7 +109,7 @@ GitHub Actions runs Rust builds/tests (with a Postgres service) and Go builds/te
 docker compose -f docker-compose.yml up -d postgres ssh-gateway
 ```
 
-- Optional: expose via Cloudflare Tunnel. Create a tunnel and set `TUNNEL_TOKEN`, then run:
+- Optional: expose via Cloudflare Tunnel. Create a tunnel and set `TUNNEL_TOKEN` (in `.env` or exported), then run:
 
 ```
 export TUNNEL_TOKEN=xxxxxxxx

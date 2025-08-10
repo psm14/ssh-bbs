@@ -115,6 +115,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "crossterm",
+ "dotenvy",
  "rand",
  "ratatui",
  "serde",

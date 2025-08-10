@@ -14,6 +14,8 @@ use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Load .env if present for local/dev configuration
+    let _ = dotenvy::dotenv();
     init_tracing();
 
     let cfg = Config::from_env()?;
