@@ -222,8 +222,8 @@
 
 * [x] github actions (or whatever)
 
-  * [x] rust: build + tests (with Postgres service)
-  * [x] go: build gateway
+  * [x] rust: fmt + clippy + build + tests (with Postgres service)
+  * [x] go: golangci-lint + build
   * [ ] docker: build/push multi-arch images for `bbs-tui` and `bbs-ssh-gateway`
 * [ ] semver tag + changelog
 * [ ] sample `.env.example`

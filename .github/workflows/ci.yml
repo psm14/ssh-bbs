@@ -37,6 +37,9 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres
+
       - name: Wait for Postgres
         run: |
           for i in {1..30}; do
@@ -44,8 +47,20 @@ jobs:
             sleep 1
           done
 
+      - name: Run migrations
+        run: sqlx migrate run
+
+      - name: Prepare SQLx offline data
+        run: cargo sqlx prepare -- --all-features
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -D warnings
+
       - name: Build bbs-tui
-        run: cargo build -p bbs-tui --locked --verbose
+        run: SQLX_OFFLINE=true cargo build -p bbs-tui --locked --verbose
 
       - name: Test bbs-tui
         run: cargo test -p bbs-tui --locked --verbose
@@ -62,6 +77,12 @@ jobs:
         with:
           go-version: '1.22.x'
 
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: crates/bbs-ssh-gateway
+
       - name: Build gateway
         working-directory: crates/bbs-ssh-gateway
         run: go build ./...
@@ -69,4 +90,3 @@ jobs:
       - name: Test gateway
         working-directory: crates/bbs-ssh-gateway
         run: go test ./...
-
