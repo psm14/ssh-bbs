@@ -11,6 +11,9 @@ pub enum Command {
     Rooms,
     Who(Option<String>),
     RoomDel(String),
+    InviteNew(Option<String>),
+    InviteDel(String),
+    Invites,
 }
 
 pub fn parse_command(s: &str) -> Option<Command> {
@@ -36,6 +39,13 @@ pub fn parse_command(s: &str) -> Option<Command> {
         "rooms" => Some(Command::Rooms),
         "who" => Some(Command::Who(if arg.is_empty() { None } else { Some(arg) })),
         "roomdel" | "rdel" => Some(Command::RoomDel(arg)),
+        "invite-new" | "invnew" => Some(Command::InviteNew(if arg.is_empty() {
+            None
+        } else {
+            Some(arg)
+        })),
+        "invite-del" | "invdel" => Some(Command::InviteDel(arg)),
+        "invites" | "invs" => Some(Command::Invites),
         _ => Some(Command::Help),
     }
 }

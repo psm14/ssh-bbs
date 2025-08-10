@@ -1,5 +1,6 @@
 mod data;
 mod input;
+mod invite;
 mod nick;
 mod rate;
 mod realtime;
@@ -38,12 +39,18 @@ async fn main() -> Result<()> {
         .clone()
         .unwrap_or_else(|| "dev-local".into());
     let key_type = cfg.pubkey_type.clone().unwrap_or_else(|| "dev".into());
-    let user = match data::upsert_user_by_fp(&pool, &fp, &key_type).await {
-        Ok(u) => u,
-        Err(e) => {
-            error!(error=%e, "failed upsert user");
-            return Err(e);
+    // If user exists, proceed; otherwise prompt for invite before creating user
+    let user = if let Some(u) = data::get_user_by_fp(&pool, &fp).await? {
+        u
+    } else {
+        match invite::prompt(&pool).await {
+            Ok(()) => {}
+            Err(e) => {
+                error!(error=%e, "invite rejected or cancelled");
+                return Err(e);
+            }
         }
+        data::upsert_user_by_fp(&pool, &fp, &key_type).await?
     };
     let room = data::ensure_room_exists(&pool, &cfg.default_room, user.id).await?;
     data::join_room(&pool, room.id, user.id).await?;

@@ -98,6 +98,17 @@ pub async fn upsert_user_by_fp(pool: &PgPool, fp: &str, key_type: &str) -> Resul
     Err(anyhow!("failed to create unique handle after retries"))
 }
 
+pub async fn get_user_by_fp(pool: &PgPool, fp: &str) -> Result<Option<User>> {
+    let u = sqlx::query_as::<_, User>(
+        r#"select id, fingerprint_sha256, pubkey_type, handle, created_at, last_seen_at
+           from users where fingerprint_sha256 = $1"#,
+    )
+    .bind(fp)
+    .fetch_optional(pool)
+    .await?;
+    Ok(u)
+}
+
 pub async fn ensure_room_exists(pool: &PgPool, name: &str, created_by: i64) -> Result<Room> {
     if let Some(r) = sqlx::query_as::<_, Room>(
         r#"select id, name, created_by, is_deleted, created_at, deleted_at
@@ -379,4 +390,56 @@ fn random_handle() -> String {
     let hex = format!("{:08x}", n);
     let s = format!("usr-{}", hex);
     s.chars().take(16).collect()
+}
+
+// Invites
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct Invite {
+    pub code: String,
+    pub created_by: Option<i64>,
+    pub created_at: DateTime<Utc>,
+}
+
+pub async fn create_invite(pool: &PgPool, code: &str, created_by: i64) -> Result<Invite> {
+    let inv = sqlx::query_as::<_, Invite>(
+        r#"insert into invites(code, created_by)
+           values($1,$2)
+           returning code, created_by, created_at"#,
+    )
+    .bind(code)
+    .bind(created_by)
+    .fetch_one(pool)
+    .await?;
+    Ok(inv)
+}
+
+pub async fn delete_invite(pool: &PgPool, code: &str) -> Result<bool> {
+    let res = sqlx::query(r#"delete from invites where code=$1"#)
+        .bind(code)
+        .execute(pool)
+        .await?;
+    Ok(res.rows_affected() > 0)
+}
+
+pub async fn list_invites(pool: &PgPool, limit: i64) -> Result<Vec<Invite>> {
+    let rows = sqlx::query_as::<_, Invite>(
+        r#"select code, created_by, created_at
+           from invites
+           order by created_at desc
+           limit $1"#,
+    )
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+pub async fn consume_invite(pool: &PgPool, code: &str) -> Result<bool> {
+    let res = sqlx::query(r#"delete from invites where code=$1"#)
+        .bind(code)
+        .execute(pool)
+        .await?;
+    Ok(res.rows_affected() > 0)
 }

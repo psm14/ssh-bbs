@@ -531,6 +531,57 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
             let names: Vec<String> = who.into_iter().map(|u| u.handle).collect();
             app.status = format!("who: {}", names.join(", "));
         }
+        Command::InviteNew(code_opt) => {
+            if !app.opts.is_admin {
+                app.status = "admin only".into();
+                return Ok(());
+            }
+            let code = if let Some(c) = code_opt { c } else { random_code(12) };
+            match data::create_invite(&app.pool, &code, app.user.id).await {
+                Ok(_inv) => {
+                    app.status = format!("invite created: {}", code);
+                }
+                Err(e) => {
+                    app.status = format!("invite error: {}", e);
+                }
+            }
+        }
+        Command::InviteDel(code) => {
+            if !app.opts.is_admin {
+                app.status = "admin only".into();
+                return Ok(());
+            }
+            if code.trim().is_empty() {
+                app.status = "usage: /invite-del <code>".into();
+                return Ok(());
+            }
+            let ok = data::delete_invite(&app.pool, code.trim()).await?;
+            app.status = if ok { "invite deleted".into() } else { "not found".into() };
+        }
+        Command::Invites => {
+            if !app.opts.is_admin {
+                app.status = "admin only".into();
+                return Ok(());
+            }
+            let invs = data::list_invites(&app.pool, 20).await?;
+            if invs.is_empty() {
+                app.status = "invites: (none)".into();
+            } else {
+                let s = invs.into_iter().map(|i| i.code).collect::<Vec<_>>().join(", ");
+                app.status = format!("invites: {}", s);
+            }
+        }
     }
     Ok(())
+}
+
+fn random_code(n: usize) -> String {
+    use rand::{distributions::Alphanumeric, Rng};
+    let s: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| (c as char).to_ascii_lowercase())
+        .take(n)
+        .collect();
+    s
 }
