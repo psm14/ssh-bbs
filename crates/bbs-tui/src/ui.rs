@@ -85,8 +85,8 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
         app.seen_ids.insert(m.id);
     }
 
-    // load rooms list
-    let list = data::list_rooms(&app.pool).await?;
+    // load rooms list (only rooms the user has joined)
+    let list = data::list_joined_rooms(&app.pool, app.user.id).await?;
     app.rooms = list
         .into_iter()
         .map(|r| RoomEntry {
@@ -426,8 +426,8 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
             let ok = data::soft_delete_room_by_creator(&app.pool, name, app.user.id).await?;
             if ok {
                 app.status = format!("room '{}' deleted", name);
-                // refresh rooms list
-                let list = data::list_rooms(&app.pool).await?;
+                // refresh rooms list (joined rooms)
+                let list = data::list_joined_rooms(&app.pool, app.user.id).await?;
                 app.rooms = list
                     .into_iter()
                     .map(|r| RoomEntry {
@@ -501,9 +501,13 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
             }
         }
         Command::Rooms => {
-            let rooms = data::list_rooms(&app.pool).await?;
-            let names: Vec<String> = rooms.into_iter().map(|r| r.name).collect();
-            app.status = format!("rooms: {}", names.join(", "));
+            // Show currently subscribed rooms from the sidebar
+            let names: Vec<String> = app.rooms.iter().map(|r| r.name.clone()).collect();
+            app.status = if names.is_empty() {
+                "rooms: (none)".into()
+            } else {
+                format!("rooms: {}", names.join(", "))
+            };
         }
         Command::Who(_room) => {
             let who = data::list_recent_members(&app.pool, app.room.id, 50).await?;

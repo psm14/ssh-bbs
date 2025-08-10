@@ -295,6 +295,20 @@ pub async fn list_rooms(pool: &PgPool) -> Result<Vec<RoomSummary>> {
     Ok(rows)
 }
 
+pub async fn list_joined_rooms(pool: &PgPool, user_id: i64) -> Result<Vec<RoomSummary>> {
+    let rows = sqlx::query_as::<_, RoomSummary>(
+        r#"select r.id, r.name
+           from room_members rm
+           join rooms r on r.id = rm.room_id
+           where rm.user_id = $1 and r.is_deleted = false
+           order by rm.last_joined_at desc"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct WhoSummary {
     pub id: i64,
