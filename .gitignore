@@ -5,6 +5,7 @@ target/
 # Go
 bin/
 crates/bbs-ssh-gateway/bbs-ssh-gateway
+crates/bbs-ssh-gateway/.bin/
 
 # Editors/OS
 .DS_Store
