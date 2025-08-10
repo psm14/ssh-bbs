@@ -37,8 +37,10 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Install sqlx-cli
-        run: cargo install sqlx-cli --no-default-features --features rustls,postgres
+      - name: Install sqlx-cli (prebuilt)
+        uses: taiki-e/install-action@v2
+        with:
+          tool: sqlx-cli
 
       - name: Wait for Postgres
         run: |
@@ -53,7 +55,7 @@ jobs:
 
       - name: Prepare SQLx offline data
         working-directory: crates/bbs-tui
-        run: cargo sqlx prepare -- --all-features
+        run: sqlx prepare -- --all-features
 
       - name: Format check
         run: cargo fmt --all -- --check
