@@ -321,6 +321,30 @@ pub async fn list_joined_rooms(pool: &PgPool, user_id: i64) -> Result<Vec<RoomSu
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
+pub struct RoomJoined {
+    pub id: i64,
+    pub name: String,
+    pub last_joined_at: chrono::DateTime<Utc>,
+}
+
+pub async fn list_joined_rooms_with_times(
+    pool: &PgPool,
+    user_id: i64,
+) -> Result<Vec<RoomJoined>> {
+    let rows = sqlx::query_as::<_, RoomJoined>(
+        r#"select r.id, r.name, rm.last_joined_at
+           from room_members rm
+           join rooms r on r.id = rm.room_id
+           where rm.user_id = $1 and r.is_deleted = false
+           order by rm.last_joined_at desc"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct WhoSummary {
     pub id: i64,
     pub handle: String,

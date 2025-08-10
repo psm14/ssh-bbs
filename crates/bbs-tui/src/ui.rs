@@ -504,13 +504,21 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
             }
         }
         Command::Rooms => {
-            // Show currently subscribed rooms from the sidebar
-            let names: Vec<String> = app.rooms.iter().map(|r| r.name.clone()).collect();
-            app.status = if names.is_empty() {
-                "rooms: (none)".into()
+            // Show joined rooms with join times; mark current with '>'
+            let list = data::list_joined_rooms_with_times(&app.pool, app.user.id).await?;
+            if list.is_empty() {
+                app.status = "rooms: (none)".into();
             } else {
-                format!("rooms: {}", names.join(", "))
-            };
+                let items: Vec<String> = list
+                    .into_iter()
+                    .map(|r| {
+                        let mark = if r.id == app.room.id { "> " } else { "" };
+                        let ts = r.last_joined_at.format("%H:%M");
+                        format!("{}{} [{}]", mark, r.name, ts)
+                    })
+                    .collect();
+                app.status = format!("rooms: {}", items.join(", "));
+            }
         }
         Command::Who(_room) => {
             let who = data::list_recent_members(&app.pool, app.room.id, 50).await?;
