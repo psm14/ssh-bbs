@@ -62,6 +62,11 @@ async fn main() -> Result<()> {
         msg_max_len: cfg.msg_max_len,
         rate_per_min: cfg.rate_per_min,
         fp_short,
+        is_admin: cfg
+            .admin_fp
+            .as_deref()
+            .map(|adm| adm == user.fingerprint_sha256)
+            .unwrap_or(false),
     };
     ui::run(pool.clone(), user, room, opts).await?;
 
@@ -119,6 +124,7 @@ struct Config {
     pub rate_per_min: u32,
     pub retention_days: u32,
     pub history_load: u32,
+    pub admin_fp: Option<String>,
 }
 
 impl Config {
@@ -145,6 +151,7 @@ impl Config {
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(200);
+        let admin_fp = std::env::var("BBS_ADMIN_FP").ok();
         Ok(Self {
             database_url,
             default_room,
@@ -155,6 +162,7 @@ impl Config {
             rate_per_min,
             retention_days,
             history_load,
+            admin_fp,
         })
     }
 }

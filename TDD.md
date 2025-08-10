@@ -36,6 +36,7 @@ ssh client → cloudflare tunnel (raw tcp) → ssh gateway (pty) → spawn rust 
   * `REMOTE_ADDR` (ip\:port)
   * `DATABASE_URL`
   * `BBS_DEFAULT_ROOM` (default `lobby`)
+  * optional: `BBS_ADMIN_FP` (OpenSSH-style SHA256 fingerprint string identifying the admin user)
 * first run:
 
   * upsert user by fingerprint; if new, assign random ascii handle (adjective-noun-hex; truncated ≤16; retry on collision).
@@ -65,7 +66,7 @@ ssh client → cloudflare tunnel (raw tcp) → ssh gateway (pty) → spawn rust 
 ## rooms & ownership
 
 * a room’s `created_by` is the user who first created it.
-* delete rules (phase 1): only creator can delete; later mods can too.
+* delete rules (phase 1): only creator can delete; if `BBS_ADMIN_FP` is set and matches the current user's fingerprint, admin may delete any room.
 * deletion is soft (to preserve refs); name becomes unavailable post-delete unless we fully purge (v2).
 
 ## rate limits, sizes, retention (defaults; env-configurable)

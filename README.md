@@ -73,6 +73,7 @@ Gateway-only:
 
 - `BBS_CLIENT_PATH` (path to `bbs-tui` binary inside the container; default `/app/bbs-tui`)
 - `BBS_HOSTKEY_PATH` (PKCS8 PEM location; default `/app/host-keys/hostkey.pem`)
+- `BBS_ADMIN_FP` (optional; OpenSSH-style SHA256 fingerprint of the admin's public key, e.g. `SHA256:...`) — grants admin privileges (currently: delete any room)
 
 The gateway exports to the TUI:
 

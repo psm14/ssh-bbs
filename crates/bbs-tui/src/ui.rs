@@ -30,6 +30,7 @@ pub struct UiOpts {
     pub msg_max_len: usize,
     pub fp_short: String,
     pub rate_per_min: u32,
+    pub is_admin: bool,
 }
 
 struct App {
@@ -419,7 +420,11 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                 app.status = "usage: /roomdel <name> (a-z0-9_-){1,24}".into();
                 return Ok(());
             }
-            let ok = data::soft_delete_room_by_creator(&app.pool, name, app.user.id).await?;
+            let ok = if app.opts.is_admin {
+                data::soft_delete_room_any(&app.pool, name).await?
+            } else {
+                data::soft_delete_room_by_creator(&app.pool, name, app.user.id).await?
+            };
             if ok {
                 app.status = format!("room '{}' deleted", name);
                 // refresh rooms list (joined rooms)
@@ -432,6 +437,8 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                         unread: 0,
                     })
                     .collect();
+            } else if app.opts.is_admin {
+                app.status = "room not found or already deleted".into();
             } else {
                 app.status = "not room creator or already deleted".into();
             }

@@ -271,6 +271,18 @@ pub async fn soft_delete_room_by_creator(
     Ok(res.rows_affected() > 0)
 }
 
+pub async fn soft_delete_room_any(pool: &PgPool, name: &str) -> Result<bool> {
+    let res = sqlx::query(
+        r#"update rooms
+            set is_deleted = true, deleted_at = now()
+          where name = $1 and is_deleted = false"#,
+    )
+    .bind(name)
+    .execute(pool)
+    .await?;
+    Ok(res.rows_affected() > 0)
+}
+
 pub async fn prune_old_messages(
     pool: &PgPool,
     cutoff: chrono::DateTime<Utc>,
