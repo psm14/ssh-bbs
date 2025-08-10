@@ -162,12 +162,12 @@
 
 ## m9 — retention job (app-level, phase 1)
 
-* [ ] env `BBS_RETENTION_DAYS=30`
-* [ ] background task every hour:
+* [x] env `BBS_RETENTION_DAYS=30`
+* [x] background task every hour:
 
-  * [ ] `delete from messages where created_at < now() - interval '$D days'`
-* [ ] log purged row count
-* [ ] ensure no blocking: run with small batch `limit 1000` loop
+  * [x] delete messages older than cutoff timestamp
+* [x] log purged row count
+* [x] ensure no blocking: run with small batch `limit 1000` loop
 
 ## m10 — logging + config
 

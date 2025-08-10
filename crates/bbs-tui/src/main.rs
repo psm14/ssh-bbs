@@ -10,6 +10,7 @@ mod util;
 use anyhow::{anyhow, Context, Result};
 use sqlx::postgres::PgPoolOptions;
 use tracing::{error, info};
+use chrono::{Utc, Duration as ChronoDuration};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -45,6 +46,9 @@ async fn main() -> Result<()> {
     let room = data::ensure_room_exists(&pool, &cfg.default_room, user.id).await?;
     data::join_room(&pool, room.id, user.id).await?;
 
+    // start retention job
+    spawn_retention_job(pool.clone(), cfg.retention_days);
+
     // start UI runtime (interactive)
     let fp_short = cfg
         .pubkey_sha256
@@ -72,6 +76,34 @@ fn init_tracing() {
         .with_span_list(false)
         .compact()
         .init();
+}
+
+fn spawn_retention_job(pool: sqlx::PgPool, retention_days: u32) {
+    tokio::spawn(async move {
+        let days = retention_days as i64;
+        loop {
+            let cutoff = Utc::now() - ChronoDuration::days(days);
+            let mut total: u64 = 0;
+            loop {
+                match crate::data::prune_old_messages(&pool, cutoff, 1000).await {
+                    Ok(0) => break,
+                    Ok(n) => {
+                        total += n;
+                        // small yield
+                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                    }
+                    Err(e) => {
+                        tracing::error!(error=%e, "retention prune error");
+                        break;
+                    }
+                }
+            }
+            if total > 0 {
+                tracing::info!(pruned=total, "retention prune complete");
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
+        }
+    });
 }
 
 struct Config {

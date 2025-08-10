@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 use rand::Rng;
 use sqlx::PgPool;
+use std::time::Duration as StdDuration;
 
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct User {
@@ -256,6 +257,28 @@ pub async fn soft_delete_room_by_creator(
     .execute(pool)
     .await?;
     Ok(res.rows_affected() > 0)
+}
+
+pub async fn prune_old_messages(
+    pool: &PgPool,
+    cutoff: chrono::DateTime<Utc>,
+    batch_limit: i64,
+) -> Result<u64> {
+    let res = sqlx::query(
+        r#"with doomed as (
+                select id from messages
+                where created_at < $1
+                order by created_at asc
+                limit $2
+            )
+            delete from messages m using doomed d
+            where m.id = d.id"#,
+    )
+    .bind(cutoff)
+    .bind(batch_limit)
+    .execute(pool)
+    .await?;
+    Ok(res.rows_affected())
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
