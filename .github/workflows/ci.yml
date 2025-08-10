@@ -42,12 +42,7 @@ jobs:
         with:
           tool: sqlx-cli
 
-      - name: Cargo subcommand shim for sqlx
-        run: |
-          mkdir -p "$HOME/.cargo/bin"
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          SQLX_BIN="$(command -v sqlx)"
-          ln -sf "$SQLX_BIN" "$HOME/.cargo/bin/cargo-sqlx"
+      # Use standalone sqlx with CARGO env to enable `prepare`
 
       - name: Wait for Postgres
         run: |
@@ -62,7 +57,9 @@ jobs:
 
       - name: Prepare SQLx offline data
         working-directory: crates/bbs-tui
-        run: cargo sqlx prepare -- --all-features
+        env:
+          CARGO: cargo
+        run: sqlx prepare -- --all-features
 
       - name: Format check
         run: cargo fmt --all -- --check
