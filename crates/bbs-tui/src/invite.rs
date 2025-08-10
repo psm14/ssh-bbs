@@ -1,7 +1,9 @@
 use anyhow::{anyhow, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::execute;
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Modifier, Style};
@@ -42,18 +44,38 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
                 _ => Color::Blue,
             };
             let banner = Paragraph::new(vec![
-                Line::from(Span::styled("  ____  ____   _____", Style::default().fg(banner_color).add_modifier(Modifier::BOLD))),
-                Line::from(Span::styled(" | __ )| __ ) | ____|  invite-only", Style::default().fg(banner_color))),
-                Line::from(Span::styled(r" |  _ \|  _ \ |  _|", Style::default().fg(banner_color))),
-                Line::from(Span::styled(" | |_) | |_) || |___", Style::default().fg(banner_color))),
-                Line::from(Span::styled(" |____/|____/ |_____|", Style::default().fg(banner_color))),
+                Line::from(Span::styled(
+                    "  ____  ____   _____",
+                    Style::default()
+                        .fg(banner_color)
+                        .add_modifier(Modifier::BOLD),
+                )),
+                Line::from(Span::styled(
+                    " | __ )| __ ) | ____|  invite-only",
+                    Style::default().fg(banner_color),
+                )),
+                Line::from(Span::styled(
+                    r" |  _ \|  _ \ |  _|",
+                    Style::default().fg(banner_color),
+                )),
+                Line::from(Span::styled(
+                    " | |_) | |_) || |___",
+                    Style::default().fg(banner_color),
+                )),
+                Line::from(Span::styled(
+                    " |____/|____/ |_____|",
+                    Style::default().fg(banner_color),
+                )),
             ])
             .block(Block::default().borders(Borders::NONE));
             f.render_widget(banner, chunks[0]);
 
             let input_label = format!("invite code: {}", input);
-            let body = Paragraph::new(input_label)
-                .block(Block::default().borders(Borders::ALL).title("access required"));
+            let body = Paragraph::new(input_label).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("access required"),
+            );
             f.render_widget(body, chunks[1]);
 
             let footer = Paragraph::new(Span::styled(
@@ -65,7 +87,10 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
 
         let timeout = Duration::from_millis(100);
         if event::poll(timeout)? {
-            if let Event::Key(KeyEvent { code, modifiers, .. }) = event::read()? {
+            if let Event::Key(KeyEvent {
+                code, modifiers, ..
+            }) = event::read()?
+            {
                 match (code, modifiers) {
                     (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
                         cleanup(&mut terminal)?;
@@ -98,7 +123,8 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
                             }
                         }
                     }
-                    (KeyCode::Char(ch), KeyModifiers::NONE) | (KeyCode::Char(ch), KeyModifiers::SHIFT) => {
+                    (KeyCode::Char(ch), KeyModifiers::NONE)
+                    | (KeyCode::Char(ch), KeyModifiers::SHIFT) => {
                         if input.len() < 64 {
                             input.push(ch);
                         }

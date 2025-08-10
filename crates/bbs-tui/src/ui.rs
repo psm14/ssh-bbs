@@ -536,7 +536,11 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                 app.status = "admin only".into();
                 return Ok(());
             }
-            let code = if let Some(c) = code_opt { c } else { random_code(12) };
+            let code = if let Some(c) = code_opt {
+                c
+            } else {
+                random_code(12)
+            };
             match data::create_invite(&app.pool, &code, app.user.id).await {
                 Ok(_inv) => {
                     app.status = format!("invite created: {}", code);
@@ -556,7 +560,11 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                 return Ok(());
             }
             let ok = data::delete_invite(&app.pool, code.trim()).await?;
-            app.status = if ok { "invite deleted".into() } else { "not found".into() };
+            app.status = if ok {
+                "invite deleted".into()
+            } else {
+                "not found".into()
+            };
         }
         Command::Invites => {
             if !app.opts.is_admin {
@@ -567,7 +575,11 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
             if invs.is_empty() {
                 app.status = "invites: (none)".into();
             } else {
-                let s = invs.into_iter().map(|i| i.code).collect::<Vec<_>>().join(", ");
+                let s = invs
+                    .into_iter()
+                    .map(|i| i.code)
+                    .collect::<Vec<_>>()
+                    .join(", ");
                 app.status = format!("invites: {}", s);
             }
         }
