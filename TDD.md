@@ -56,7 +56,7 @@ ssh client → cloudflare tunnel (raw tcp) → ssh gateway (pty) → spawn rust 
 
   * `/nick <name>` → change nickname (ascii only, `[a-z0-9_-]{2,16}`, unique).
   * `/join <room>` → create if missing; room name rules: `[a-z0-9_-]{1,24}`.
-  * `/leave [room]`
+  * `/leave [room]` → drop membership (`delete from room_members where room_id=$rid and user_id=$me`) and unfocus if current.
   * `/rooms` → list rooms.
   * `/who [room]` → recent active users.
   * `/me <action>` → emote.
@@ -324,4 +324,3 @@ where created_at < now() - ($RETENTION_DAYS || ' days')::interval;
 
 * room delete semantics beyond creator (mods): add `roles(user_id, room_id, role)`; gate deletes to `role in ('owner','mod')`.
 * history load tuning: `BBS_HISTORY_LOAD` default 200; adjust per room or by last activity window.
-

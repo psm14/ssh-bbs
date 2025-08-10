@@ -134,6 +134,17 @@ pub async fn join_room(pool: &PgPool, room_id: i64, user_id: i64) -> Result<()> 
     Ok(())
 }
 
+pub async fn leave_room(pool: &PgPool, room_id: i64, user_id: i64) -> Result<bool> {
+    let res = sqlx::query(
+        r#"delete from room_members where room_id = $1 and user_id = $2"#,
+    )
+    .bind(room_id)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+    Ok(res.rows_affected() > 0)
+}
+
 pub async fn recent_messages_view(
     pool: &PgPool,
     room_id: i64,

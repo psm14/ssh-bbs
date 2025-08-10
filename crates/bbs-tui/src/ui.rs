@@ -459,6 +459,8 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                         app.status = "cannot leave the last room".into();
                         return Ok(());
                     }
+                    // Drop membership first
+                    let _ = data::leave_room(&app.pool, leaving_id, app.user.id).await?;
                     // pick next room different from current
                     let mut candidate = None;
                     for off in 0..app.rooms.len() {
@@ -492,7 +494,8 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                     }
                     app.status = format!("left '{}'", target_name);
                 } else {
-                    // Leaving a non-focused room: just remove from sidebar
+                    // Leaving a non-focused room: drop membership and remove from sidebar
+                    let _ = data::leave_room(&app.pool, leaving_id, app.user.id).await?;
                     app.rooms.remove(idx);
                     app.status = format!("left '{}'", target_name);
                 }

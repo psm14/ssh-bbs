@@ -95,7 +95,7 @@
   * [x] upsert room (with `created_by = current_user`)
   * [x] upsert `room_members`
   * [x] load last `BBS_HISTORY_LOAD` messages ordered desc then render
-* [x] `/leave [room]` (no db delete; just ui focus/unsubscribe)
+* [x] `/leave [room]` (drop membership row; update UI focus)
 * [x] `/rooms` list
 * [x] `/who [room]` (recent active = `last_joined_at` or last message timestamp)
 * [x] `/me <action>` (client-side formatting)
