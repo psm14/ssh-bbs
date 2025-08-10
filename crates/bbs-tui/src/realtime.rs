@@ -52,7 +52,7 @@ async fn run_once(pool: &PgPool, tx: &mpsc::Sender<Event>) -> Result<()> {
     listener.listen("room_events").await?;
     loop {
         let n = listener.recv().await?;
-        if let Ok(p) = serde_json::from_str::<NotifyPayload>(&n.payload()) {
+        if let Ok(p) = serde_json::from_str::<NotifyPayload>(n.payload()) {
             if p.t == "msg" {
                 let _ = tx
                     .send(Event::Message {

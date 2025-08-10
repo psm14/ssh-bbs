@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 // Simple client-side token bucket to mirror server limit.
 // Tokens refill continuously at `rate_per_min` per minute up to `capacity`.

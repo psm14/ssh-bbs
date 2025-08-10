@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use rand::Rng;
 use sqlx::PgPool;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct User {
     pub id: i64,
@@ -13,6 +14,7 @@ pub struct User {
     pub last_seen_at: DateTime<Utc>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct Room {
     pub id: i64,
@@ -23,6 +25,7 @@ pub struct Room {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct Message {
     pub id: i64,
@@ -33,6 +36,7 @@ pub struct Message {
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct MessageView {
     pub id: i64,
@@ -135,13 +139,11 @@ pub async fn join_room(pool: &PgPool, room_id: i64, user_id: i64) -> Result<()> 
 }
 
 pub async fn leave_room(pool: &PgPool, room_id: i64, user_id: i64) -> Result<bool> {
-    let res = sqlx::query(
-        r#"delete from room_members where room_id = $1 and user_id = $2"#,
-    )
-    .bind(room_id)
-    .bind(user_id)
-    .execute(pool)
-    .await?;
+    let res = sqlx::query(r#"delete from room_members where room_id = $1 and user_id = $2"#)
+        .bind(room_id)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
     Ok(res.rows_affected() > 0)
 }
 
@@ -297,14 +299,6 @@ pub struct RoomSummary {
     pub name: String,
 }
 
-pub async fn list_rooms(pool: &PgPool) -> Result<Vec<RoomSummary>> {
-    let rows = sqlx::query_as::<_, RoomSummary>(
-        r#"select id, name from rooms where is_deleted=false order by name asc"#,
-    )
-    .fetch_all(pool)
-    .await?;
-    Ok(rows)
-}
 
 pub async fn list_joined_rooms(pool: &PgPool, user_id: i64) -> Result<Vec<RoomSummary>> {
     let rows = sqlx::query_as::<_, RoomSummary>(
@@ -327,10 +321,7 @@ pub struct RoomJoined {
     pub last_joined_at: chrono::DateTime<Utc>,
 }
 
-pub async fn list_joined_rooms_with_times(
-    pool: &PgPool,
-    user_id: i64,
-) -> Result<Vec<RoomJoined>> {
+pub async fn list_joined_rooms_with_times(pool: &PgPool, user_id: i64) -> Result<Vec<RoomJoined>> {
     let rows = sqlx::query_as::<_, RoomJoined>(
         r#"select r.id, r.name, rm.last_joined_at
            from room_members rm
@@ -344,6 +335,7 @@ pub async fn list_joined_rooms_with_times(
     Ok(rows)
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct WhoSummary {
     pub id: i64,

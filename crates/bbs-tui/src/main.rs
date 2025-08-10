@@ -7,7 +7,7 @@ mod rooms;
 mod ui;
 mod util;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use chrono::{Duration as ChronoDuration, Utc};
 use sqlx::postgres::PgPoolOptions;
 use tracing::{error, info};
@@ -111,6 +111,7 @@ struct Config {
     pub default_room: String,
     pub pubkey_sha256: Option<String>,
     pub pubkey_type: Option<String>,
+    #[allow(dead_code)]
     pub remote_addr: Option<String>,
     pub msg_max_len: usize,
     pub rate_per_min: u32,

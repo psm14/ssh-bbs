@@ -40,11 +40,8 @@ struct App {
     input: String,
     status: String,
     messages: Vec<MessageView>,
-    // scrolling: 0 = bottom pinned
-    scroll_y: u16,
     seen_ids: HashSet<i64>,
     rooms: Vec<RoomEntry>,
-    sidebar_selected: Option<usize>,
     running: bool,
     bucket: TokenBucket,
 }
@@ -77,9 +74,7 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
         status: String::from("/help for commands"),
         running: true,
         seen_ids: HashSet::new(),
-        scroll_y: 0,
         rooms: vec![],
-        sidebar_selected: None,
         bucket,
     };
     for m in &app.messages {
@@ -125,10 +120,8 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
                                 app.messages.push(v);
                             }
                         }
-                    } else {
-                        if let Some(re) = app.rooms.iter_mut().find(|r| r.id == room_id) {
-                            re.unread = re.unread.saturating_add(1);
-                        }
+                    } else if let Some(re) = app.rooms.iter_mut().find(|r| r.id == room_id) {
+                        re.unread = re.unread.saturating_add(1);
                     }
                 }
             }
@@ -142,7 +135,7 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
 
     // restore terminal
     disable_raw_mode()?;
-    let mut w = terminal.backend_mut();
+    let w = terminal.backend_mut();
     crossterm::execute!(w, LeaveAlternateScreen)?;
     terminal.show_cursor()?;
     Ok(())
@@ -378,7 +371,7 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                     if is_unique {
                         app.status = "nick taken".into();
                     } else {
-                        app.status = format!("nick error: {}", e).into();
+                        app.status = format!("nick error: {}", e);
                     }
                 }
             }
@@ -476,7 +469,8 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                     if let Some(next_id) = candidate {
                         // load next room by id (name lookup from list)
                         if let Some(re) = app.rooms.iter().find(|r| r.id == next_id) {
-                            let room = data::ensure_room_exists(&app.pool, &re.name, app.user.id).await?;
+                            let room =
+                                data::ensure_room_exists(&app.pool, &re.name, app.user.id).await?;
                             data::join_room(&app.pool, room.id, app.user.id).await?;
                             app.room = room;
                             app.messages = data::recent_messages_view(
