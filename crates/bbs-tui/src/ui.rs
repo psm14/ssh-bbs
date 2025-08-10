@@ -18,8 +18,8 @@ use std::{io, time::Duration};
 use crate::data::{self, MessageView, Room, User};
 use crate::input::{parse_command, Command};
 use crate::nick::valid_nick;
-use crate::realtime;
 use crate::rate::TokenBucket;
+use crate::realtime;
 use crate::rooms::valid_room_name;
 use std::collections::HashSet;
 use tokio::sync::mpsc;
@@ -430,7 +430,11 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
                 let list = data::list_rooms(&app.pool).await?;
                 app.rooms = list
                     .into_iter()
-                    .map(|r| RoomEntry { id: r.id, name: r.name, unread: 0 })
+                    .map(|r| RoomEntry {
+                        id: r.id,
+                        name: r.name,
+                        unread: 0,
+                    })
                     .collect();
             } else {
                 app.status = "not room creator or already deleted".into();

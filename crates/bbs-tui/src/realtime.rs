@@ -72,7 +72,11 @@ struct MinimalMsg {
     created_at: DateTime<Utc>,
 }
 
-async fn poll_once(pool: &PgPool, tx: &mpsc::Sender<Event>, last_seen: &mut DateTime<Utc>) -> Result<()> {
+async fn poll_once(
+    pool: &PgPool,
+    tx: &mpsc::Sender<Event>,
+    last_seen: &mut DateTime<Utc>,
+) -> Result<()> {
     // Fetch new messages since last_seen and emit as events
     let rows: Vec<MinimalMsg> = sqlx::query_as::<_, MinimalMsg>(
         r#"select id, room_id, created_at

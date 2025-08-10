@@ -8,9 +8,9 @@ mod ui;
 mod util;
 
 use anyhow::{anyhow, Context, Result};
+use chrono::{Duration as ChronoDuration, Utc};
 use sqlx::postgres::PgPoolOptions;
 use tracing::{error, info};
-use chrono::{Utc, Duration as ChronoDuration};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -99,7 +99,7 @@ fn spawn_retention_job(pool: sqlx::PgPool, retention_days: u32) {
                 }
             }
             if total > 0 {
-                tracing::info!(pruned=total, "retention prune complete");
+                tracing::info!(pruned = total, "retention prune complete");
             }
             tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
         }
