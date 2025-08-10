@@ -77,10 +77,10 @@
 
   * [x] if joined to room: `select * from messages where id=$1`
   * [x] append to buffer, update unread if room not focused
-* [ ] reconnect strategy
+* [x] reconnect strategy
 
   * [x] exponential backoff on listener error
-  * [ ] fallback poll every 2s for `created_at > last_seen`
+  * [x] fallback poll every 2s for `created_at > last_seen`
 
 ## m4 — commands + validations
 
