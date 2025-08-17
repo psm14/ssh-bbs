@@ -1,6 +1,7 @@
 mod data;
 mod input;
 mod invite;
+mod life;
 mod nick;
 mod rate;
 mod realtime;

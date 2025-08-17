@@ -1,3 +1,4 @@
+use crate::life::{Life, LifeWidget};
 use anyhow::{anyhow, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use crossterm::execute;
@@ -5,10 +6,10 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use ratatui::backend::CrosstermBackend;
+use ratatui::layout::Alignment;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::layout::Alignment;
 use ratatui::widgets::{Block, Borders, Paragraph};
 use ratatui::Terminal;
 use sqlx::PgPool;
@@ -25,21 +26,30 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
     let mut input = String::new();
     let mut status = String::from("Enter invite code to join");
     let mut last_tick = Instant::now();
+    let mut last_step = Instant::now();
     let mut phase = 0u8;
+    // Initialize Life background sized to current terminal
+    let mut last_size = terminal.size()?;
+    let mut life = Life::new(last_size.width as usize, last_size.height as usize);
 
     loop {
         terminal.draw(|f| {
             let size = f.size();
+            // Resize life grid if terminal size changed
+            if size != last_size { /* resized */ }
+            // Render animated life background first
+            let life_widget = LifeWidget::new(&life);
+            f.render_widget(life_widget, size);
             // Use 4 chunks: top padding, banner, input area, bottom padding.
             // This centers the input area vertically while keeping the banner
             // and padding consistent.
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([
-                    Constraint::Min(1), // top padding
+                    Constraint::Min(1),    // top padding
                     Constraint::Length(7), // banner
                     Constraint::Length(3), // input area (single line)
-                    Constraint::Min(1), // bottom padding
+                    Constraint::Min(1),    // bottom padding
                 ])
                 .split(size);
 
@@ -75,22 +85,37 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
             .block(Block::default().borders(Borders::NONE));
             f.render_widget(banner.alignment(Alignment::Center), chunks[1]);
 
-            // Render a single-line, 16-char wide input box centered vertically.
-            // The box is horizontally centered by splitting the input chunk into
-            // left/middle/right sections and only rendering the middle section.
-            let inner_chunks = Layout::default()
+            // Split the 3-line input area into: padding, input, status
+            let v = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(1),
+                    Constraint::Length(1),
+                    Constraint::Length(1),
+                ])
+                .split(chunks[2]);
+            // Center input horizontally
+            let inner = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([
                     Constraint::Min(1),
                     Constraint::Length(16),
                     Constraint::Min(1),
                 ])
-                .split(chunks[2]);
-
+                .split(v[1]);
             let body = Paragraph::new(input.clone())
                 .block(Block::default().borders(Borders::ALL))
                 .alignment(Alignment::Center);
-            f.render_widget(body, inner_chunks[1]);
+            f.render_widget(body, inner[1]);
+
+            // Status one line below input, centered
+            let status_line = Paragraph::new(Line::from(Span::styled(
+                status.clone(),
+                Style::default().fg(Color::Gray),
+            )))
+            .alignment(Alignment::Center)
+            .block(Block::default().borders(Borders::NONE));
+            f.render_widget(status_line, v[2]);
         })?;
 
         let timeout = Duration::from_millis(100);
@@ -141,6 +166,18 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
                     _ => {}
                 }
             }
+        }
+        // Step the life simulation at ~12 FPS
+        if last_step.elapsed() >= Duration::from_millis(80) {
+            // handle terminal resize for life grid
+            let sz = terminal.size()?;
+            if sz != last_size {
+                life.resize(sz.width as usize, sz.height as usize);
+                last_size = sz;
+            }
+            life.step();
+            life.maybe_spawn();
+            last_step = Instant::now();
         }
         if last_tick.elapsed() >= Duration::from_millis(250) {
             phase = phase.wrapping_add(1);
