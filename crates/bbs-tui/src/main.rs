@@ -53,7 +53,9 @@ async fn main() -> Result<()> {
             .map(|adm| adm == fp)
             .unwrap_or(false);
         if is_admin_fp {
-            if logging { info!("admin fingerprint detected; bypassing invite gate"); }
+            if logging {
+                info!("admin fingerprint detected; bypassing invite gate");
+            }
             data::upsert_user_by_fp(&pool, &fp, &key_type).await?
         } else {
             match invite::prompt(&pool).await {
