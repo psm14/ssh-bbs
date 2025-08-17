@@ -63,7 +63,7 @@ The gateway injects session details as env vars and launches the TUI on a PTY. O
 - `BBS_RETENTION_DAYS` (default 30)
 - `BBS_HISTORY_LOAD` (default 200)
  - `BBS_TUI_LOG` (optional, default off): set to `1` to enable JSON logs from the TUI (otherwise suppressed to keep the SSH TTY clean).
-  
+
 You can place these in a `.env` file at the repository root:
 
 - The Rust TUI loads `.env` via `dotenvy` before reading env.
@@ -136,6 +136,7 @@ docker compose up -d postgres ssh-gateway
 ```
 export TUNNEL_TOKEN=xxxxxxxx
 docker compose up -d cloudflared
+```
 
 ### Cloudflare Tunnel Setup (Dashboard)
 
