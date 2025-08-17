@@ -38,7 +38,8 @@ pub fn parse_command(s: &str) -> Option<Command> {
         })),
         "rooms" => Some(Command::Rooms),
         "who" => Some(Command::Who(if arg.is_empty() { None } else { Some(arg) })),
-        "roomdel" | "rdel" => Some(Command::RoomDel(arg)),
+        // Canonical: room-del; keep legacy aliases
+        "room-del" | "roomdel" | "rdel" => Some(Command::RoomDel(arg)),
         "invite-new" | "invnew" => Some(Command::InviteNew(if arg.is_empty() {
             None
         } else {

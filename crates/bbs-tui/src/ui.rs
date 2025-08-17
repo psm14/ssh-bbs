@@ -45,6 +45,7 @@ struct App {
     rooms: Vec<RoomEntry>,
     running: bool,
     bucket: TokenBucket,
+    show_help: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -77,6 +78,7 @@ pub async fn run(pool: PgPool, user: User, room: Room, opts: UiOpts) -> Result<(
         seen_ids: HashSet::new(),
         rooms: vec![],
         bucket,
+        show_help: false,
     };
     for m in &app.messages {
         app.seen_ids.insert(m.id);
@@ -219,12 +221,83 @@ fn draw(
                 .title(app.status.as_str()),
         );
         f.render_widget(input, chunks[2]);
+
+        // Help overlay
+        if app.show_help {
+            // Build help content
+            let lines = build_help_lines(app.opts.is_admin);
+            // Centered modal size
+            let modal_w = size.width.min(78);
+            let modal_h = (lines.len() as u16 + 4).min(size.height.saturating_sub(2));
+            let outer_v = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Min(1),
+                    Constraint::Length(modal_h),
+                    Constraint::Min(1),
+                ])
+                .split(size);
+            let outer_h = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Min(1),
+                    Constraint::Length(modal_w),
+                    Constraint::Min(1),
+                ])
+                .split(outer_v[1]);
+            let area = outer_h[1];
+            let help = Paragraph::new(lines).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("help (Esc to close)"),
+            );
+            f.render_widget(help, area);
+        }
     })?;
     Ok(())
 }
 
+fn build_help_lines(is_admin: bool) -> Vec<Line<'static>> {
+    let mut lines: Vec<Line<'static>> = vec![
+        Line::from("Commands:"),
+        Line::from("  /help               Show this help screen"),
+        Line::from("  /quit               Quit"),
+        Line::from("  /nick <name>        Change nickname [a-z0-9_-]{2,16}"),
+        Line::from("  /join <room>        Join or create room [a-z0-9_-]{1,24}"),
+        Line::from("  /leave [room]       Leave a room (current if omitted)"),
+        Line::from("  /rooms              List rooms you’ve joined"),
+        Line::from("  /who                Show recent active users in current room"),
+        Line::from("  /me <action>        Emote as ‘* nick <action>’"),
+        Line::from(""),
+        Line::from("Aliases:"),
+        Line::from("  /h /? (help), /q /exit (quit)"),
+    ];
+    if is_admin {
+        lines.extend_from_slice(&[
+            Line::from(""),
+            Line::from("Admin:"),
+            Line::from("  /room-del <name>    Soft-delete a room (any room)"),
+            Line::from("  /invite-new [code]  Create invite (random if omitted)"),
+            Line::from("  /invite-del <code>  Delete invite"),
+            Line::from("  /invites            List recent invites"),
+            Line::from("Aliases: /roomdel /rdel, /invnew, /invdel, /invs"),
+        ]);
+    } else {
+        lines.extend_from_slice(&[
+            Line::from(""),
+            Line::from("Admin-only (if applicable):"),
+            Line::from("  /room-del, /invite-new, /invite-del, /invites"),
+        ]);
+    }
+    lines
+}
+
 async fn handle_key(app: &mut App, k: KeyEvent) -> Result<()> {
     match (k.code, k.modifiers) {
+        // Close help on Esc
+        (KeyCode::Esc, _) if app.show_help => {
+            app.show_help = false;
+        }
         (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
             app.running = false;
         }
@@ -329,7 +402,8 @@ fn sanitize(s: &str) -> String {
 async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
     match cmd {
         Command::Help => {
-            app.status = "/help /quit /nick /join /rooms /who /me".into();
+            app.show_help = true;
+            app.status = "help".into();
         }
         Command::Quit => {
             app.running = false;
@@ -419,7 +493,7 @@ async fn handle_command(app: &mut App, cmd: Command) -> Result<()> {
         Command::RoomDel(name) => {
             let name = name.trim();
             if !valid_room_name(name) {
-                app.status = "usage: /roomdel <name> (a-z0-9_-){1,24}".into();
+                app.status = "usage: /room-del <name> (a-z0-9_-){1,24}".into();
                 return Ok(());
             }
             let ok = if app.opts.is_admin {

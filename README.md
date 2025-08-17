@@ -84,11 +84,29 @@ The gateway exports to the TUI:
 ## Features
 
 - Multi-room chat with persistent history and realtime delivery.
-- Commands: `/nick`, `/join`, `/leave`, `/rooms`, `/who`, `/me`, `/help`, `/quit`.
+- Commands: `/help`, `/quit`, `/nick`, `/join`, `/leave`, `/rooms`, `/who`, `/me`.
 - Server-side rate limiting (per-user per-minute) and client-side token bucket.
 - Room deletion by creator (soft delete); joining deleted rooms is blocked.
 - 30-day retention job (batched hourly cleanup).
 - Minimal, width-aware TUI with rooms sidebar and unread counters.
+
+### Commands
+
+- User:
+  - `/help`: Show help screen (aliases: `/h`, `/?`).
+  - `/quit`: Quit (aliases: `/q`, `/exit`).
+  - `/nick <name>`: Change nickname `[a-z0-9_-]{2,16}`.
+  - `/join <room>`: Join or create room `[a-z0-9_-]{1,24}`.
+  - `/leave [room]`: Leave a room (current if omitted).
+  - `/rooms`: List rooms you’ve joined.
+  - `/who`: Show recent active users in the current room.
+  - `/me <action>`: Emote as `* nick <action>`.
+
+- Admin (if `BBS_ADMIN_FP` matches your key):
+  - `/room-del <name>`: Soft-delete a room (canonical; aliases: `/roomdel`, `/rdel`).
+  - `/invite-new [code]`: Create invite (random if omitted; alias: `/invnew`).
+  - `/invite-del <code>`: Delete invite (alias: `/invdel`).
+  - `/invites`: List recent invites (alias: `/invs`).
 
 ## Development
 

@@ -37,3 +37,9 @@
 - Env vars: `DATABASE_URL`, `BBS_DEFAULT_ROOM`, `BBS_MSG_MAX_LEN`, `BBS_RATE_PER_MIN`, `BBS_RETENTION_DAYS`, `BBS_HISTORY_LOAD`.
 - Defaults: UTC timestamps; sanitize/escape user-rendered content in the TUI.
 
+## Commands Reference (canonical)
+
+- User: `/help` (`/h`, `/?`), `/quit` (`/q`, `/exit`), `/nick <name>`, `/join <room>`, `/leave [room]`, `/rooms`, `/who`, `/me <action>`.
+- Admin: `/room-del <name>` (aliases: `/roomdel`, `/rdel`), `/invite-new [code]` (`/invnew`), `/invite-del <code>` (`/invdel`), `/invites` (`/invs`).
+
+Documentation and UI help should present canonical names; legacy aliases continue to parse for compatibility.

@@ -53,15 +53,23 @@ ssh client → cloudflare tunnel (raw tcp) → ssh gateway (pty) → spawn rust 
   * bottom: input + slash hints.
   * statusline: current nick, room, rate bucket state, fp short (sha256:8).
 * keybinds: `enter` send, `esc` focus input, `pgup/pgdn` scroll, `tab` switch rooms, `ctrl+c` quit.
-* commands:
+* commands (canonical names; aliases in parentheses):
 
+  * `/help` (`/h`, `/?`) → show help screen.
+  * `/quit` (`/q`, `/exit`) → quit.
   * `/nick <name>` → change nickname (ascii only, `[a-z0-9_-]{2,16}`, unique).
   * `/join <room>` → create if missing; room name rules: `[a-z0-9_-]{1,24}`.
   * `/leave [room]` → drop membership (`delete from room_members where room_id=$rid and user_id=$me`) and unfocus if current.
   * `/rooms` → list rooms.
-  * `/who [room]` → recent active users.
+  * `/who` → recent active users in current room.
   * `/me <action>` → emote.
-  * `/help`, `/quit`.
+
+* admin commands (if `BBS_ADMIN_FP` matches):
+
+  * `/room-del <name>` (`/roomdel`, `/rdel`) → soft-delete room (any room).
+  * `/invite-new [code]` (`/invnew`) → create invite (random if omitted).
+  * `/invite-del <code>` (`/invdel`) → delete invite.
+  * `/invites` (`/invs`) → list recent invites.
 
 ## rooms & ownership
 
