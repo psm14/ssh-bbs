@@ -39,7 +39,8 @@ ssh client → cloudflare tunnel (raw tcp) → ssh gateway (pty) → spawn rust 
   * optional: `BBS_ADMIN_FP` (OpenSSH-style SHA256 fingerprint string identifying the admin user)
 * first run:
 
-  * upsert user by fingerprint; if new, assign random ascii handle (adjective-noun-hex; truncated ≤16; retry on collision).
+  * if fingerprint matches `BBS_ADMIN_FP`, bypass invite gate and upsert user.
+  * otherwise, prompt for invite; upon acceptance, upsert user by fingerprint; if new, assign random ascii handle (adjective-noun-hex; truncated ≤16; retry on collision).
   * ensure default room exists; join it.
 * subsequent runs: auto sign-in by fingerprint.
 

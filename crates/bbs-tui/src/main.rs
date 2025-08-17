@@ -44,14 +44,25 @@ async fn main() -> Result<()> {
     let user = if let Some(u) = data::get_user_by_fp(&pool, &fp).await? {
         u
     } else {
-        match invite::prompt(&pool).await {
-            Ok(()) => {}
-            Err(e) => {
-                error!(error=%e, "invite rejected or cancelled");
-                return Err(e);
+        // Allow admin (by fingerprint) to bypass invite gate on first login
+        let is_admin_fp = cfg
+            .admin_fp
+            .as_deref()
+            .map(|adm| adm == fp)
+            .unwrap_or(false);
+        if is_admin_fp {
+            info!("admin fingerprint detected; bypassing invite gate");
+            data::upsert_user_by_fp(&pool, &fp, &key_type).await?
+        } else {
+            match invite::prompt(&pool).await {
+                Ok(()) => {}
+                Err(e) => {
+                    error!(error=%e, "invite rejected or cancelled");
+                    return Err(e);
+                }
             }
+            data::upsert_user_by_fp(&pool, &fp, &key_type).await?
         }
-        data::upsert_user_by_fp(&pool, &fp, &key_type).await?
     };
     let room = data::ensure_room_exists(&pool, &cfg.default_room, user.id).await?;
     data::join_room(&pool, room.id, user.id).await?;

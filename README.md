@@ -90,6 +90,8 @@ The gateway exports to the TUI:
 - 30-day retention job (batched hourly cleanup).
 - Minimal, width-aware TUI with rooms sidebar and unread counters.
 
+Admin users (by `BBS_ADMIN_FP`) bypass the invite gate on first login.
+
 ### Commands
 
 - User:
