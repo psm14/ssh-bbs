@@ -9,7 +9,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Clear, Paragraph},
     Terminal,
 };
 use sqlx::PgPool;
@@ -246,6 +246,8 @@ fn draw(
                 ])
                 .split(outer_v[1]);
             let area = outer_h[1];
+            // Clear area first so underlying borders/text don't show through
+            f.render_widget(Clear, area);
             let help = Paragraph::new(lines).block(
                 Block::default()
                     .borders(Borders::ALL)
@@ -281,12 +283,6 @@ fn build_help_lines(is_admin: bool) -> Vec<Line<'static>> {
             Line::from("  /invite-del <code>  Delete invite"),
             Line::from("  /invites            List recent invites"),
             Line::from("Aliases: /roomdel /rdel, /invnew, /invdel, /invs"),
-        ]);
-    } else {
-        lines.extend_from_slice(&[
-            Line::from(""),
-            Line::from("Admin-only (if applicable):"),
-            Line::from("  /room-del, /invite-new, /invite-del, /invites"),
         ]);
     }
     lines
