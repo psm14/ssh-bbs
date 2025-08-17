@@ -45,14 +45,14 @@ services:
     cpus: "0.50"
     mem_limit: 256m
 
-  # Optional Cloudflare tunnel
-  # cloudflared:
-  #   image: cloudflare/cloudflared:latest
-  #   command: tunnel --no-autoupdate run
-  #   environment:
-  #     TUNNEL_TOKEN: ${TUNNEL_TOKEN}
-  #   depends_on:
-  #     - ssh-gateway
+  # Cloudflare tunnel (enable in prod by setting TUNNEL_TOKEN)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - ssh-gateway
 
 volumes:
   pg: {}

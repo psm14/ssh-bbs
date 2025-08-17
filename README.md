@@ -43,7 +43,7 @@ cargo build -p bbs-tui
 3) Run the gateway via compose (spawns the TUI for SSH sessions)
 
 ```
-docker compose up -d ssh-gateway
+docker compose up -d postgres ssh-gateway
 ```
 
 4) Connect via SSH (any public key)
@@ -127,14 +127,14 @@ GitHub Actions runs Rust builds/tests (with a Postgres service) and Go builds/te
 - Start Postgres and the SSH gateway with resource limits and restart policy:
 
 ```
-docker compose -f docker-compose.yml up -d postgres ssh-gateway
+docker compose up -d postgres ssh-gateway
 ```
 
 - Optional: expose via Cloudflare Tunnel. Create a tunnel and set `TUNNEL_TOKEN` (in `.env` or exported), then run:
 
 ```
 export TUNNEL_TOKEN=xxxxxxxx
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d cloudflared
+docker compose up -d cloudflared
 ```
 
 - The gateway listens on `:2222`. Point your DNS or CF tunnel to `ssh://<hostname>:2222`.
