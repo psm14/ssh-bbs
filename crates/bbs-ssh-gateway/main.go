@@ -1,29 +1,31 @@
 package main
 
 import (
-	"crypto/ed25519"
-	"crypto/rand"
-	"crypto/x509"
-	"encoding/pem"
-	"errors"
-	"fmt"
-	"io"
-	"log"
-	"net"
-	"os"
-	"os/exec"
-	"strings"
-	"time"
+    "crypto/ed25519"
+    "crypto/rand"
+    "crypto/x509"
+    "encoding/pem"
+    "errors"
+    "fmt"
+    "io"
+    "log"
+    "net"
+    "os"
+    "os/exec"
+    "strings"
+    "time"
 
-	pty "github.com/creack/pty"
-	glssh "github.com/gliderlabs/ssh"
-	"github.com/joho/godotenv"
-	gossh "golang.org/x/crypto/ssh"
+    pty "github.com/creack/pty"
+    glssh "github.com/gliderlabs/ssh"
+    "github.com/joho/godotenv"
+    gossh "golang.org/x/crypto/ssh"
+    "golang.org/x/sys/unix"
 )
 
 func main() {
-	// Load .env if present for local/dev
-	_ = godotenv.Load()
+    // Load .env if present for local/dev
+    _ = godotenv.Load()
+    hardenProcess()
 	addr := ":2222"
 	clientPath := getenv("BBS_CLIENT_PATH", "/app/bbs-tui")
 	defaultRoom := getenv("BBS_DEFAULT_ROOM", "lobby")
@@ -128,6 +130,19 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("ssh server error: %v", err)
 	}
+}
+
+// hardenProcess applies basic process-level hardening:
+// - set umask to 077
+// - disable core dumps
+// - request no_new_privs (best-effort; ignored if unsupported)
+func hardenProcess() {
+    // Ensure new files are not world-readable
+    _ = unix.Umask(0o077)
+    // Disable core dumps
+    _ = unix.Setrlimit(unix.RLIMIT_CORE, &unix.Rlimit{Cur: 0, Max: 0})
+    // Best-effort no new privileges
+    _ = unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
 }
 
 func mustLoadOrCreateHostKey(path string) gossh.Signer {

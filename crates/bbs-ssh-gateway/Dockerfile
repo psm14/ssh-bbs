@@ -33,6 +33,7 @@ COPY crates/bbs-ssh-gateway/go.mod ./go.mod
 COPY crates/bbs-ssh-gateway/go.sum ./go.sum
 RUN go mod download
 COPY crates/bbs-ssh-gateway/ .
+RUN mkdir -p /emptydir
 ARG TARGETARCH
 # Build static Go binary for the target arch
 ENV CGO_ENABLED=0 GOOS=linux
@@ -43,8 +44,10 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then export GOARCH=arm64; else export GOARCH
 # Final minimal image
 FROM scratch AS runtime
 WORKDIR /app
-COPY --from=go-builder /out/bbs-ssh-gateway /app/bbs-ssh-gateway
-COPY --from=rust-builder /out/bbs-tui /app/bbs-tui
+COPY --chown=65532:65532 --from=go-builder /emptydir/ /app/host-keys/
+COPY --chown=65532:65532 --from=go-builder /out/bbs-ssh-gateway /app/bbs-ssh-gateway
+COPY --chown=65532:65532 --from=rust-builder /out/bbs-tui /app/bbs-tui
 EXPOSE 2222
 ENV BBS_CLIENT_PATH=/app/bbs-tui
+USER 65532:65532
 ENTRYPOINT ["/app/bbs-ssh-gateway"]
