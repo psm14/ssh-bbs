@@ -94,15 +94,18 @@ impl Life {
                         }
                         let nx = x + dx;
                         let ny = y + dy;
-                        if nx >= 0 && ny >= 0 && nx < w && ny < h {
-                            if self.get(nx as usize, ny as usize) {
-                                n += 1;
-                            }
+                        if nx >= 0
+                            && ny >= 0
+                            && nx < w
+                            && ny < h
+                            && self.get(nx as usize, ny as usize)
+                        {
+                            n += 1;
                         }
                     }
                 }
                 let alive = self.get(x as usize, y as usize);
-                let next = (alive && (n == 2 || n == 3)) || (!alive && n == 3);
+                let next = n == 3 || (alive && n == 2);
                 let idx = (y as usize) * self.width + (x as usize);
                 self.scratch[idx] = next;
             }
@@ -336,7 +339,7 @@ impl Life {
         // Rotate: 0=up,1=right,2=down,3=left relative to base moving right
         let rot = (dir % 4) as i32;
         for (dx, dy) in base {
-            let (mut rx, mut ry) = (dx as i32, dy as i32);
+            let (mut rx, mut ry) = (dx, dy);
             for _ in 0..rot {
                 // rotate around approx center (2,1)
                 let cx = rx - 2;
