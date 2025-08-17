@@ -137,12 +137,12 @@ func main() {
 // - disable core dumps
 // - request no_new_privs (best-effort; ignored if unsupported)
 func hardenProcess() {
-    // Ensure new files are not world-readable
-    _ = unix.Umask(0o077)
-    // Disable core dumps
-    _ = unix.Setrlimit(unix.RLIMIT_CORE, &unix.Rlimit{Cur: 0, Max: 0})
-    // Best-effort no new privileges
-    _ = unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
+	// Ensure new files are not world-readable
+	_ = unix.Umask(0o077)
+	// Disable core dumps
+	_ = unix.Setrlimit(unix.RLIMIT_CORE, &unix.Rlimit{Cur: 0, Max: 0})
+	// Best-effort no new privileges
+	_ = unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
 }
 
 func mustLoadOrCreateHostKey(path string) gossh.Signer {
