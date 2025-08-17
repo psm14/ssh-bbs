@@ -8,6 +8,7 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
+use ratatui::layout::Alignment;
 use ratatui::widgets::{Block, Borders, Paragraph};
 use ratatui::Terminal;
 use sqlx::PgPool;
@@ -29,12 +30,16 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
     loop {
         terminal.draw(|f| {
             let size = f.size();
+            // Use 4 chunks: top padding, banner, input area, bottom padding.
+            // This centers the input area vertically while keeping the banner
+            // and padding consistent.
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([
-                    Constraint::Length(7),
-                    Constraint::Min(1),
-                    Constraint::Length(3),
+                    Constraint::Min(1), // top padding
+                    Constraint::Length(7), // banner
+                    Constraint::Length(3), // input area (single line)
+                    Constraint::Min(1), // bottom padding
                 ])
                 .split(size);
 
@@ -45,44 +50,47 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
             };
             let banner = Paragraph::new(vec![
                 Line::from(Span::styled(
-                    "  ____  ____   _____",
+                    "  ____  ____  _____  ",
                     Style::default()
                         .fg(banner_color)
                         .add_modifier(Modifier::BOLD),
                 )),
                 Line::from(Span::styled(
-                    " | __ )| __ ) | ____|  invite-only",
+                    " | __ )| __ )| ____| ",
                     Style::default().fg(banner_color),
                 )),
                 Line::from(Span::styled(
-                    r" |  _ \|  _ \ |  _|",
+                    r" |  _ \|  _ \|  _|   ",
                     Style::default().fg(banner_color),
                 )),
                 Line::from(Span::styled(
-                    " | |_) | |_) || |___",
+                    " | |_) | |_) | |___  ",
                     Style::default().fg(banner_color),
                 )),
                 Line::from(Span::styled(
-                    " |____/|____/ |_____|",
+                    " |____/|____/|_____| ",
                     Style::default().fg(banner_color),
                 )),
             ])
             .block(Block::default().borders(Borders::NONE));
-            f.render_widget(banner, chunks[0]);
+            f.render_widget(banner.alignment(Alignment::Center), chunks[1]);
 
-            let input_label = format!("invite code: {}", input);
-            let body = Paragraph::new(input_label).block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("access required"),
-            );
-            f.render_widget(body, chunks[1]);
+            // Render a single-line, 16-char wide input box centered vertically.
+            // The box is horizontally centered by splitting the input chunk into
+            // left/middle/right sections and only rendering the middle section.
+            let inner_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Min(1),
+                    Constraint::Length(16),
+                    Constraint::Min(1),
+                ])
+                .split(chunks[2]);
 
-            let footer = Paragraph::new(Span::styled(
-                status.as_str(),
-                Style::default().fg(Color::Gray),
-            ));
-            f.render_widget(footer, chunks[2]);
+            let body = Paragraph::new(input.clone())
+                .block(Block::default().borders(Borders::ALL))
+                .alignment(Alignment::Center);
+            f.render_widget(body, inner_chunks[1]);
         })?;
 
         let timeout = Duration::from_millis(100);
@@ -125,7 +133,8 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
                     }
                     (KeyCode::Char(ch), KeyModifiers::NONE)
                     | (KeyCode::Char(ch), KeyModifiers::SHIFT) => {
-                        if input.len() < 64 {
+                        // Invite codes are max 16 characters
+                        if input.len() < 16 {
                             input.push(ch);
                         }
                     }
