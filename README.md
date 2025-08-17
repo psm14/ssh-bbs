@@ -62,6 +62,7 @@ The gateway injects session details as env vars and launches the TUI on a PTY. O
 - `BBS_RATE_PER_MIN` (default 10)
 - `BBS_RETENTION_DAYS` (default 30)
 - `BBS_HISTORY_LOAD` (default 200)
+ - `BBS_TUI_LOG` (optional, default off): set to `1` to enable JSON logs from the TUI (otherwise suppressed to keep the SSH TTY clean).
   
 You can place these in a `.env` file at the repository root:
 

@@ -56,9 +56,9 @@ async fn main() -> Result<()> {
         } else {
             match invite::prompt(&pool).await {
                 Ok(()) => {}
-                Err(e) => {
-                    error!(error=%e, "invite rejected or cancelled");
-                    return Err(e);
+                Err(_e) => {
+                    // Silent exit on cancel/reject to avoid emitting logs to the SSH TTY.
+                    return Ok(());
                 }
             }
             data::upsert_user_by_fp(&pool, &fp, &key_type).await?
@@ -93,6 +93,12 @@ async fn main() -> Result<()> {
 }
 
 fn init_tracing() {
+    // Suppress logs by default to keep the SSH TTY clean.
+    // Set BBS_TUI_LOG=1 (and optionally RUST_LOG) to enable.
+    let enabled = std::env::var("BBS_TUI_LOG").ok().as_deref() == Some("1");
+    if !enabled {
+        return;
+    }
     let env = tracing_subscriber::EnvFilter::from_default_env()
         .add_directive("info".parse().unwrap_or_default());
     tracing_subscriber::fmt()
