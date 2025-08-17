@@ -84,24 +84,16 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
             .block(Block::default().borders(Borders::NONE));
             f.render_widget(banner.alignment(Alignment::Center), chunks[1]);
 
-            // Split the 3-line input area into: padding, input, padding
-            let v = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([
-                    Constraint::Length(1),
-                    Constraint::Length(1),
-                    Constraint::Length(1),
-                ])
-                .split(chunks[2]);
-            // Center input horizontally
+            // Center a 16-char input field with a 3-row bordered box (height 3)
+            // Width 18 to account for borders on both sides.
             let inner = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([
                     Constraint::Min(1),
-                    Constraint::Length(16),
+                    Constraint::Length(18),
                     Constraint::Min(1),
                 ])
-                .split(v[1]);
+                .split(chunks[2]);
             let body = Paragraph::new(input.clone())
                 .block(Block::default().borders(Borders::ALL))
                 .alignment(Alignment::Center);
