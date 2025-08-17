@@ -251,17 +251,25 @@ impl Life {
     }
 
     fn spawn_toad_random(&mut self) {
-        if self.width < 6 || self.height < 4 { return; }
+        if self.width < 6 || self.height < 4 {
+            return;
+        }
         let x = self.rng.gen_range(2, (self.width as u32).saturating_sub(4)) as usize;
-        let y = self.rng.gen_range(1, (self.height as u32).saturating_sub(3)) as usize;
+        let y = self
+            .rng
+            .gen_range(1, (self.height as u32).saturating_sub(3)) as usize;
         let dir = (self.rng.next_u32() % 2) as u8;
         self.seed_toad(x, y, dir);
     }
 
     fn spawn_beacon_random(&mut self) {
-        if self.width < 6 || self.height < 6 { return; }
+        if self.width < 6 || self.height < 6 {
+            return;
+        }
         let x = self.rng.gen_range(2, (self.width as u32).saturating_sub(5)) as usize;
-        let y = self.rng.gen_range(2, (self.height as u32).saturating_sub(5)) as usize;
+        let y = self
+            .rng
+            .gen_range(2, (self.height as u32).saturating_sub(5)) as usize;
         self.seed_beacon(x, y);
     }
 

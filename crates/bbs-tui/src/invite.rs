@@ -24,7 +24,6 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut input = String::new();
-    let mut status = String::from("Enter invite code to join");
     let mut last_tick = Instant::now();
     let mut last_step = Instant::now();
     let mut phase = 0u8;
@@ -85,7 +84,7 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
             .block(Block::default().borders(Borders::NONE));
             f.render_widget(banner.alignment(Alignment::Center), chunks[1]);
 
-            // Split the 3-line input area into: padding, input, status
+            // Split the 3-line input area into: padding, input, padding
             let v = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([
@@ -107,15 +106,6 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
                 .block(Block::default().borders(Borders::ALL))
                 .alignment(Alignment::Center);
             f.render_widget(body, inner[1]);
-
-            // Status one line below input, centered
-            let status_line = Paragraph::new(Line::from(Span::styled(
-                status.clone(),
-                Style::default().fg(Color::Gray),
-            )))
-            .alignment(Alignment::Center)
-            .block(Block::default().borders(Borders::NONE));
-            f.render_widget(status_line, v[2]);
         })?;
 
         let timeout = Duration::from_millis(100);
@@ -138,20 +128,18 @@ pub async fn prompt(pool: &PgPool) -> Result<()> {
                     }
                     (KeyCode::Enter, _) => {
                         let code = input.trim();
-                        if code.is_empty() {
-                            status = "enter a code".into();
-                        } else {
+                        if !code.is_empty() {
                             match crate::data::consume_invite(pool, code).await {
                                 Ok(true) => {
                                     cleanup(&mut terminal)?;
                                     return Ok(());
                                 }
                                 Ok(false) => {
-                                    status = "invalid code".into();
+                                    // invalid code: clear input but show no status
                                     input.clear();
                                 }
-                                Err(e) => {
-                                    status = format!("error: {}", e);
+                                Err(_e) => {
+                                    // error: ignore visual status; keep input for retry
                                 }
                             }
                         }
