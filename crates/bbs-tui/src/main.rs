@@ -12,16 +12,18 @@ mod util;
 use anyhow::{Context, Result};
 use chrono::{Duration as ChronoDuration, Utc};
 use sqlx::postgres::PgPoolOptions;
-use tracing::{error, info};
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Load .env if present for local/dev configuration
     let _ = dotenvy::dotenv();
-    init_tracing();
+    let logging = init_tracing();
 
     let cfg = Config::from_env()?;
-    info!(default_room = %cfg.default_room, "booting bbs-tui");
+    if logging {
+        info!(default_room = %cfg.default_room, "booting bbs-tui");
+    }
 
     // Connect DB and run migrations
     let pool = PgPoolOptions::new()
@@ -51,7 +53,7 @@ async fn main() -> Result<()> {
             .map(|adm| adm == fp)
             .unwrap_or(false);
         if is_admin_fp {
-            info!("admin fingerprint detected; bypassing invite gate");
+            if logging { info!("admin fingerprint detected; bypassing invite gate"); }
             data::upsert_user_by_fp(&pool, &fp, &key_type).await?
         } else {
             match invite::prompt(&pool).await {
@@ -92,12 +94,12 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn init_tracing() {
+fn init_tracing() -> bool {
     // Suppress logs by default to keep the SSH TTY clean.
     // Set BBS_TUI_LOG=1 (and optionally RUST_LOG) to enable.
     let enabled = std::env::var("BBS_TUI_LOG").ok().as_deref() == Some("1");
     if !enabled {
-        return;
+        return false;
     }
     let env = tracing_subscriber::EnvFilter::from_default_env()
         .add_directive("info".parse().unwrap_or_default());
@@ -108,6 +110,7 @@ fn init_tracing() {
         .with_span_list(false)
         .compact()
         .init();
+    true
 }
 
 fn spawn_retention_job(pool: sqlx::PgPool, retention_days: u32) {
