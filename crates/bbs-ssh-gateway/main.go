@@ -1,31 +1,31 @@
 package main
 
 import (
-    "crypto/ed25519"
-    "crypto/rand"
-    "crypto/x509"
-    "encoding/pem"
-    "errors"
-    "fmt"
-    "io"
-    "log"
-    "net"
-    "os"
-    "os/exec"
-    "strings"
-    "time"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
 
-    pty "github.com/creack/pty"
-    glssh "github.com/gliderlabs/ssh"
-    "github.com/joho/godotenv"
-    gossh "golang.org/x/crypto/ssh"
-    "golang.org/x/sys/unix"
+	pty "github.com/creack/pty"
+	glssh "github.com/gliderlabs/ssh"
+	"github.com/joho/godotenv"
+	gossh "golang.org/x/crypto/ssh"
+	"golang.org/x/sys/unix"
 )
 
 func main() {
-    // Load .env if present for local/dev
-    _ = godotenv.Load()
-    hardenProcess()
+	// Load .env if present for local/dev
+	_ = godotenv.Load()
+	hardenProcess()
 	addr := ":2222"
 	clientPath := getenv("BBS_CLIENT_PATH", "/app/bbs-tui")
 	defaultRoom := getenv("BBS_DEFAULT_ROOM", "lobby")
