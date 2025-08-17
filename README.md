@@ -135,6 +135,35 @@ docker compose up -d postgres ssh-gateway
 ```
 export TUNNEL_TOKEN=xxxxxxxx
 docker compose up -d cloudflared
+
+### Cloudflare Tunnel Setup (Dashboard)
+
+To configure the tunnel in the Cloudflare dashboard:
+
+- Prerequisites: your domain is managed by Cloudflare DNS and you have access to the Zero Trust dashboard.
+- Create a tunnel and copy its token:
+  - Cloudflare Dashboard → Zero Trust → Tunnels → Create a tunnel → Cloudflared.
+  - Name the tunnel and create it; copy the connector token.
+  - Paste this token into your environment as `TUNNEL_TOKEN` (or `.env`).
+- Map a public hostname to the container:
+  - In the newly created tunnel, open “Public Hostnames” → “Add a public hostname”.
+  - Hostname: choose a subdomain, e.g. `bbs.yourdomain.com`.
+  - Service: choose “SSH” (or “TCP” if SSH isn’t shown).
+  - URL/Origin: point to `ssh-gateway:2222` (the Docker service name and port).
+  - Save. Cloudflare will create the DNS record automatically for the hostname.
+- Start the connector:
+  - `docker compose up -d cloudflared`
+
+Connecting:
+- If you configured the “SSH” service in Zero Trust Access, use Cloudflare Access to connect from clients:
+  - One-time helper: `cloudflared access ssh-config --hostname bbs.yourdomain.com --short-lived-cert` and follow the instructions to install a matching SSH config entry.
+  - Or connect ad hoc: `cloudflared access ssh --hostname bbs.yourdomain.com`.
+- If your account supports direct TCP exposure (e.g., Spectrum), and you used “TCP” as the service type, you can connect with a normal SSH client:
+  - `ssh -p 2222 user@bbs.yourdomain.com`.
+
+Notes:
+- The `cloudflared` container runs inside the same Docker network; `ssh-gateway` is resolvable by service name.
+- In production, `ssh-gateway` doesn’t bind a host port. All ingress comes through the tunnel.
 ```
 
 - In production, no host port is published. Connect through your Cloudflare Tunnel.
