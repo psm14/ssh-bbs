@@ -25,6 +25,39 @@ services:
       BBS_ADMIN_FP: ${BBS_ADMIN_FP}
     depends_on:
       - postgres
+    volumes:
+      - hostkeys:/app/host-keys
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 8192
+      nproc: 1024
+    pids_limit: 256
+    cpus: "0.50"
+    mem_limit: 256m
+
+  # Development variant exposing port 2222 on the host.
+  # Enable with: docker compose --profile dev up -d postgres ssh-gateway-dev
+  ssh-gateway-dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: crates/bbs-ssh-gateway/Dockerfile
+    environment:
+      DATABASE_URL: postgres://bbs:bbs@postgres:5432/bbs
+      BBS_CLIENT_PATH: /app/bbs-tui
+      BBS_DEFAULT_ROOM: lobby
+      BBS_HOSTKEY_PATH: /app/host-keys/hostkey.pem
+      BBS_ADMIN_FP: ${BBS_ADMIN_FP}
+    depends_on:
+      - postgres
     ports:
       - "0.0.0.0:2222:2222"
     volumes:
