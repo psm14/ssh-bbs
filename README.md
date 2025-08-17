@@ -158,15 +158,23 @@ Connecting:
 - If you configured the “SSH” service in Zero Trust Access, use Cloudflare Access to connect from clients:
   - One-time helper: `cloudflared access ssh-config --hostname bbs.yourdomain.com --short-lived-cert` and follow the instructions to install a matching SSH config entry.
   - Or connect ad hoc: `cloudflared access ssh --hostname bbs.yourdomain.com`.
+- SSH config (ProxyCommand) example for Access SSH apps:
+
+```
+Host bbs
+  HostName bbs.yourdomain.com
+  User your-ssh-username
+  ProxyCommand cloudflared access ssh --hostname %h
+```
+
 - If your account supports direct TCP exposure (e.g., Spectrum), and you used “TCP” as the service type, you can connect with a normal SSH client:
   - `ssh -p 2222 user@bbs.yourdomain.com`.
 
 Notes:
-- The `cloudflared` container runs inside the same Docker network; `ssh-gateway` is resolvable by service name.
-- In production, `ssh-gateway` doesn’t bind a host port. All ingress comes through the tunnel.
-```
+ - The `cloudflared` container runs inside the same Docker network; `ssh-gateway` is resolvable by service name.
+ - In production, `ssh-gateway` doesn’t bind a host port. All ingress comes through the tunnel.
 
-- In production, no host port is published. Connect through your Cloudflare Tunnel.
+ - In production, no host port is published. Connect through your Cloudflare Tunnel.
 - For persistence, host keys are stored in the named volume `hostkeys`.
 
 ## Security Notes
