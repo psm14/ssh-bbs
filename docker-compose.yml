@@ -12,6 +12,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    networks: ["internal"]
 
   ssh-gateway:
     build:
@@ -42,6 +43,7 @@ services:
     pids_limit: 256
     cpus: "0.50"
     mem_limit: 256m
+    networks: ["internal"]
 
   # Development variant exposing port 2222 on the host.
   # Enable with: docker compose --profile dev up -d postgres ssh-gateway-dev
@@ -77,6 +79,9 @@ services:
     pids_limit: 256
     cpus: "0.50"
     mem_limit: 256m
+    networks:
+      - internal
+      - egress
 
   # Cloudflare tunnel (enable in prod by setting TUNNEL_TOKEN)
   cloudflared:
@@ -86,7 +91,16 @@ services:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN}
     depends_on:
       - ssh-gateway
+    networks:
+      - internal
+      - egress
 
 volumes:
   pg: {}
   hostkeys: {}
+
+networks:
+  internal:
+    internal: true
+  egress:
+    driver: bridge
