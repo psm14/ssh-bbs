@@ -4,7 +4,7 @@
 
 A minimal multi-room chat (BBS) over SSH:
 
-- SSH gateway (Go, gliderlabs/wish) that authenticates via public keys and spawns a Rust TUI.
+- SSH gateway (Rust, russh + portable-pty) that authenticates via public keys and spawns the TUI in the session PTY.
 - Rust TUI (ratatui + sqlx + tokio) for interactive chat with rooms, nicknames, and realtime fanout via Postgres LISTEN/NOTIFY.
 - Postgres as the source of truth. Defaults: 10 msgs/min/user, 1000 chars/msg, 30-day retention. UTC everywhere.
 
@@ -13,13 +13,13 @@ See TDD.md for the detailed design and CHECKLIST.md for implementation progress.
 ## Project Layout
 
 - `crates/bbs-tui/`: Rust TUI client (ratatui, sqlx, tokio). Runs migrations on boot.
-- `crates/bbs-ssh-gateway/`: Go SSH gateway. Computes pubkey fingerprint, spawns TUI bound to the session PTY.
+- `crates/bbs-ssh-gateway/`: Rust SSH gateway (russh). Computes pubkey fingerprint, spawns the TUI bound to the session PTY.
 - `docker-compose.yml`: Local Postgres + gateway (and optional Cloudflare tunnel stub).
 - `TDD.md`: Design and specs. `CHECKLIST.md`: implementation tracker.
 
 ## Quickstart (local)
 
-Requirements: Docker, Rust (stable), Go 1.22+.
+Requirements: Docker and Rust (stable).
 
 Optional: copy the example env and edit values
 
@@ -34,16 +34,16 @@ cp .env.example .env
 docker compose up -d postgres
 ```
 
-2) Build the TUI
+2) Build the binaries
 
 ```
-cargo build -p bbs-tui
+cargo build -p bbs-tui -p bbs-ssh-gateway
 ```
 
 3) Run the gateway via compose (spawns the TUI for SSH sessions)
 
 ```
-docker compose --profile dev up -d postgres ssh-gateway-dev
+docker compose --profile dev up -d ssh-gateway-dev
 ```
 
 4) Connect via SSH (any public key)
@@ -62,18 +62,18 @@ The gateway injects session details as env vars and launches the TUI on a PTY. O
 - `BBS_RATE_PER_MIN` (default 10)
 - `BBS_RETENTION_DAYS` (default 30)
 - `BBS_HISTORY_LOAD` (default 200)
- - `BBS_TUI_LOG` (optional, default off): set to `1` to enable JSON logs from the TUI (otherwise suppressed to keep the SSH TTY clean).
+- `BBS_TUI_LOG` (optional, default off): set to `1` to enable JSON logs from the TUI (otherwise suppressed to keep the SSH TTY clean).
 
 You can place these in a `.env` file at the repository root:
 
-- The Rust TUI loads `.env` via `dotenvy` before reading env.
-- The Go SSH gateway loads `.env` via `godotenv`.
+- The Rust binaries (gateway + TUI) load `.env` via `dotenvy` before reading env.
 - Docker Compose also reads `.env` for variable substitution like `${TUNNEL_TOKEN}`.
 
 Gateway-only:
 
 - `BBS_CLIENT_PATH` (path to `bbs-tui` binary inside the container; default `/app/bbs-tui`)
 - `BBS_HOSTKEY_PATH` (PKCS8 PEM location; default `/app/host-keys/hostkey.pem`)
+- `BBS_LISTEN_ADDR` (optional listen address, default `0.0.0.0:2222`)
 - `BBS_ADMIN_FP` (optional; OpenSSH-style SHA256 fingerprint of the admin's public key, e.g. `SHA256:...`) — grants admin privileges (currently: delete any room)
 
 The gateway exports to the TUI:
@@ -113,15 +113,14 @@ Admin users (by `BBS_ADMIN_FP`) bypass the invite gate on first login.
 
 ## Development
 
-- Build: `cargo build -p bbs-tui`
-- Run locally (needs DB): `DATABASE_URL=... cargo run -p bbs-tui`
+- Build: `cargo build -p bbs-tui -p bbs-ssh-gateway`
+- Run locally (needs DB): `DATABASE_URL=... cargo run -p bbs-tui` or `cargo run -p bbs-ssh-gateway`
 - Lint/format: `cargo fmt --all` and `cargo clippy --all-targets --all-features -D warnings`
-- Gateway build/test: `cd crates/bbs-ssh-gateway && go build ./... && go test ./...`
 - Migrations: auto-run on TUI start (`sqlx::migrate!()`); you can also run `sqlx migrate run` with `DATABASE_URL` set.
 
 ## CI
 
-GitHub Actions runs Rust builds/tests (with a Postgres service) and Go builds/tests. See `.github/workflows/ci.yml`.
+GitHub Actions builds and tests the Rust workspace (with a Postgres service). See `.github/workflows/ci.yml`.
 
 ## Production
 

@@ -117,7 +117,7 @@ impl Life {
     pub fn maybe_spawn(&mut self) {
         // More frequent spawns to keep things active
         // Every ~30 ticks (~2.4s at 12 FPS), ~66% chance to spawn something
-        if self.tick % 30 == 0 && self.rng.chance(2, 3) {
+        if self.tick.is_multiple_of(30) && self.rng.chance(2, 3) {
             let choice = self.rng.gen_range(0, 6);
             match choice {
                 0 | 1 => self.spawn_glider_inward(),
@@ -311,7 +311,7 @@ impl Life {
 
     pub fn seed_blinker(&mut self, x: usize, y: usize, dir: u8) {
         // 3 in a line, horizontal if dir==0 else vertical
-        if dir % 2 == 0 {
+        if dir.is_multiple_of(2) {
             for dx in 0..3 {
                 self.set(x + dx, y, true);
             }
@@ -360,7 +360,7 @@ impl Life {
         // . ###
         // ## .
         let pts = [(1, 0), (2, 0), (3, 0), (0, 1), (1, 1), (2, 1)];
-        if dir % 2 == 0 {
+        if dir.is_multiple_of(2) {
             for (dx, dy) in pts {
                 self.set(x + dx, y + dy, true);
             }

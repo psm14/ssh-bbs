@@ -23,7 +23,7 @@ ssh client → cloudflare tunnel (raw tcp) → ssh gateway (pty) → spawn rust 
                                                └───────────→ postgres (sqlx + listen/notify)
 ```
 
-* **ssh gateway (go/wish)**: thin auth+pty shim. computes pubkey sha256 fp; disables shell; launches the tui bound to session pty. supports: ed25519, ecdsa p256/p384, rsa-sha2-256/512, sk-ed25519; rejects dss + rsa-sha1.
+* **ssh gateway (rust/russh)**: thin auth+pty shim. computes pubkey sha256 fp; disables shell; launches the tui bound to session pty. supports: ed25519, ecdsa p256/p384, rsa-sha2-256/512, sk-ed25519; rejects dss + rsa-sha1.
 * **tui client (rust)**: `ratatui` app. on start, upsert user by fingerprint, join a room (default `lobby`), show scrollback, subscribe to realtime, enforce client-side rate limit.
 * **postgres**: source of truth + realtime via `LISTEN/NOTIFY`.
 
@@ -223,7 +223,7 @@ BBS_HISTORY_LOAD=200
 
 Notes:
 
-- Both the Rust TUI and the Go SSH gateway will load a `.env` file at the repository root if present (via `dotenvy` and `godotenv` respectively). This makes local development simpler.
+- Both the Rust TUI and the Rust SSH gateway will load a `.env` file at the repository root if present (via `dotenvy`). This makes local development simpler.
 - Docker Compose also reads a `.env` file for `${VAR}` substitution (e.g., `TUNNEL_TOKEN`).
 ```
 
@@ -284,15 +284,15 @@ crates/
       0001_init.sql
 ```
 
-## go ssh gateway sketch (wish)
+## rust ssh gateway sketch (russh)
 
-* accept if key.type ∈ {ed25519, ecdsa256/384, rsa-sha2-256/512, sk-ed25519}; compute fp via `ssh.FingerprintSHA256(pubkey)`.
-* disable: passwords, agent/port forwarding, subsystems.
+* accept if key.algorithm ∈ {ed25519, ecdsa256/384, rsa-sha2-256/512, sk-ed25519}; compute fp via `ssh_key::PublicKey::fingerprint(HashAlg::Sha256)`.
+* disable: passwords, agent/port forwarding, subsystems (russh server config).
 * per-session:
 
-  * allocate pty.
-  * exec `BBS_CLIENT_PATH` with env (fp, type, remote addr, db url, default room).
-  * wire stdio ⇄ pty; close on disconnect; idle timeout (e.g., 2h).
+  * require client PTY request; allocate host PTY via `portable-pty`.
+  * spawn `BBS_CLIENT_PATH` with env (fp, type, remote addr, db url, default room) under the PTY.
+  * bridge data between ssh channel and PTY; close on disconnect; idle timeout (e.g., 2h).
 
 ## security posture
 
