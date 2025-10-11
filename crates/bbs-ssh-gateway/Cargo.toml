@@ -1,0 +1,17 @@
+[package]
+name = "bbs-ssh-gateway"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+dotenvy = "0.15"
+futures = "0.3"
+libc = "0.2"
+portable-pty = "0.9"
+rand_core = "0.6"
+russh = { version = "0.54.5", features = ["async-trait"] }
+ssh-key = { package = "internal-russh-forked-ssh-key", version = "0.6.11+upstream-0.6.7" }
+tokio = { version = "1.37", features = ["macros", "rt-multi-thread", "sync", "time", "process", "io-std", "net"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }

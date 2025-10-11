@@ -2,7 +2,7 @@
 
 ## Project Structure & Modules
 - `crates/bbs-tui/`: Rust TUI client (ratatui, sqlx, tokio). Contains `src/*.rs` and `migrations/` (schema + triggers).
-- `crates/bbs-ssh-gateway/`: Go SSH gateway (wish/gliderlabs). Spawns the TUI with env from the SSH session.
+- `crates/bbs-ssh-gateway/`: Rust SSH gateway (russh + portable-pty). Spawns the TUI with env from the SSH session.
 - `docker-compose.yml`: Local Postgres + gateway + optional Cloudflare tunnel.
 - Docs: `TDD.md` (design/spec), `CHECKLIST.md` (implementation tracker; update as you progress, order optional).
 
@@ -10,22 +10,20 @@
 - Rust build: `cargo build -p bbs-tui`
 - Rust run (needs DB): `DATABASE_URL=... cargo run -p bbs-tui`
 - Rust fmt/lint: `cargo fmt --all` and `cargo clippy --all-targets --all-features -D warnings`
-- Go build: `cd crates/bbs-ssh-gateway && go build ./...`
-- Go test: `cd crates/bbs-ssh-gateway && go test ./...`
+- Gateway build/run: `cargo build -p bbs-ssh-gateway` / `cargo run -p bbs-ssh-gateway`
 - Postgres (local): `docker compose up -d postgres`
 - Migrations: app runs `sqlx::migrate!()` on start; optionally use `sqlx migrate run` with `DATABASE_URL` set.
 
 ## Coding Style & Naming
-- Indentation: 4 spaces; no tabs in Rust. Go uses gofmt defaults.
+- Indentation: 4 spaces; no tabs in Rust.
 - Rust: idiomatic modules as in `TDD.md` (`ui.rs`, `input.rs`, `data.rs`, ...). Snake_case for files, lower_snake_case for fns/vars, UpperCamelCase for types.
-- Go: package names lower_snake; keep files small and focused.
-- Lint/format: rustfmt + clippy; gofmt (+ golangci-lint if configured).
+- Lint/format: rustfmt + clippy.
 
 ## Testing Guidelines
 - Unit tests: `cargo test -p bbs-tui` (parsers, validators, rate bucket). Place in `src/*` with `#[cfg(test)]` or `tests/`.
 - Integration (DB): require `DATABASE_URL`; test migrations apply, user upsert, listen/notify.
 - E2E: optional tmux/SSH script to validate fanout latency (<200ms median).
-- Go: standard `go test ./...` for gateway session and key handling.
+- Gateway: `cargo check -p bbs-ssh-gateway` (no dedicated test suite yet).
 
 ## Commit & PR Guidelines
 - Commits: imperative, present tense; concise (<72 chars), e.g., "add tdd", "add implementation checklist" (see git log). Group logical changes.

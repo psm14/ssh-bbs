@@ -9,16 +9,15 @@
 * [x] rust workspace
 
   * [x] `cargo new --bin crates/bbs-tui`
-  * [x] top-level `Cargo.toml` `[workspace]` with `members = ["crates/bbs-tui"]`
-* [x] go ssh gateway
+  * [x] top-level `Cargo.toml` `[workspace]` with `members = ["crates/bbs-tui", "crates/bbs-ssh-gateway"]`
+* [x] rust ssh gateway
 
-  * [x] `mkdir -p crates/bbs-ssh-gateway && cd crates/bbs-ssh-gateway`
-  * [x] `go mod init github.com/you/bbs-ssh-gateway`
+  * [x] `cargo new --bin crates/bbs-ssh-gateway`
 * [x] toolchain + lint
 
   * [x] rust: `rustup override set stable` in repo
   * [ ] add rust `clippy` + `rustfmt` configs
-  * [x] go: `gofmt` + `golangci-lint` (optional)
+  * [x] gateway: `cargo fmt -p bbs-ssh-gateway` + `cargo clippy -p bbs-ssh-gateway`
 * [x] license + readme
 * [x] `.editorconfig`, `.gitignore` (target/, node\_modules/ just in case)
 
@@ -129,9 +128,9 @@
   * [x] exclude from `/rooms` listing
   * [ ] acceptance: creator can delete; others get permission error
 
-## m7 — ssh gateway (go, wish)
+## m7 — ssh gateway (rust, russh)
 
-* [x] deps: `gliderlabs/ssh`, `golang.org/x/crypto/ssh`, `creack/pty`
+* [x] deps: `russh`, `ssh-key`, `portable-pty`
 * [x] server options
 
   * [x] host keys (ephemeral ed25519 for now)
@@ -142,11 +141,11 @@
 
   * [x] allow: ed25519, ecdsa p256/p384, rsa-sha2-256/512, sk-ssh-ed25519
   * [x] reject: dss, rsa-sha1
-* [x] compute fingerprint: `ssh.FingerprintSHA256(pubkey)`
+* [x] compute fingerprint: `ssh_key::PublicKey::fingerprint(HashAlg::Sha256)`
 * [x] session handler
 
   * [x] allocate pty
-  * [x] `exec.Command(BBS_CLIENT_PATH)`; set env: `BBS_PUBKEY_SHA256`, `BBS_PUBKEY_TYPE`, `REMOTE_ADDR`, `DATABASE_URL`, `BBS_DEFAULT_ROOM`
+* [x] spawn `BBS_CLIENT_PATH` with env: `BBS_PUBKEY_SHA256`, `BBS_PUBKEY_TYPE`, `REMOTE_ADDR`, `DATABASE_URL`, `BBS_DEFAULT_ROOM`
   * [x] wire stdio ↔ pty
   * [x] exit on disconnect
 * [x] containerize gateway with `BBS_CLIENT_PATH=/app/bbs-tui`
@@ -173,8 +172,8 @@
 
 * [x] structured logs
 
-  * [x] rust: `tracing` json formatter to stdout
-  * [x] go: log connect/disconnect, key type, fp short
+  * [x] rust tui: `tracing` json formatter to stdout
+  * [x] gateway: log connect/disconnect, key type, fp short
 * [x] cli/env config
 
   * [x] rust: read env with sane defaults, print on boot
@@ -223,7 +222,6 @@
 * [x] github actions (or whatever)
 
   * [x] rust: fmt + clippy + build + tests (with Postgres service)
-  * [x] go: golangci-lint + build
   * [ ] docker: build/push multi-arch images for `bbs-tui` and `bbs-ssh-gateway`
 * [ ] semver tag + changelog
 * [x] sample `.env.example`
